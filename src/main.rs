@@ -27,15 +27,25 @@ fn main() {
     // Run test input
     {
         let test_data = get_test_data(day);
-        let test_answer = runner.test(&test_data.input);
 
-        if test_answer != test_data.answer {
+        let test_answer = runner.run_p1(&test_data.input);
+        if test_answer != test_data.answer_p1 {
             println!(
-                "Failed test: expected {} - got answer {}",
-                test_data.answer, test_answer
+                "Failed p1 test: expected {} - got answer {}",
+                test_data.answer_p1, test_answer
             );
             return;
         }
+
+        let test_answer = runner.run_p2(&test_data.input);
+        if test_answer != test_data.answer_p2 {
+            println!(
+                "Failed p1 test: expected {} - got answer {}",
+                test_data.answer_p2, test_answer
+            );
+            return;
+        }
+
         println!("Test success");
     }
     // Run puzzle input
@@ -67,13 +77,15 @@ fn get_input(day: usize) -> Vec<String> {
 
 struct TestData {
     input: Vec<String>,
-    answer: usize,
+    answer_p1: usize,
+    answer_p2: usize,
 }
 impl TestData {
-    pub fn new(input: Vec<String>, answer: usize) -> Self {
+    pub fn new(input: Vec<String>, answer: (usize, usize)) -> Self {
         Self {
             input: input,
-            answer: answer,
+            answer_p1: answer.0,
+            answer_p2: answer.1,
         }
     }
 }
@@ -85,7 +97,12 @@ fn get_test_data(day: usize) -> TestData {
         Ok(lines) => lines,
     };
 
-    let answer: usize = lines[0].parse::<usize>().unwrap();
+    let answer: (usize, usize) = {
+        let (p1, p2) = lines[0].split_once(" ").unwrap();
+
+        (p1.parse::<usize>().unwrap(), p2.parse::<usize>().unwrap())
+    };
+
     let input: Vec<String> = lines.iter().skip(2).map(|e| e.to_string()).collect();
 
     TestData::new(input, answer)
@@ -95,7 +112,8 @@ mod tests {
     #[test]
     fn parse_test_data_test() {
         let test_data = super::get_test_data(1);
-        assert_eq!(7, test_data.answer);
+        assert_eq!(7, test_data.answer_p1);
+        assert_eq!(5, test_data.answer_p2);
         assert_eq!(10, test_data.input.len());
     }
 }

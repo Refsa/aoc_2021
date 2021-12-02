@@ -18,10 +18,6 @@ impl Runner for AOC1 {
             .filter(|e| (e[1] - e[0]) > 0)
             .count()
     }
-    fn test(&self, input: &Vec<std::string::String>) -> usize {
-        let parsed = AOC1::parse_input(input);
-        parsed.windows(2).filter(|e| (e[1] - e[0]) > 0).count()
-    }
 }
 
 impl AOC1 {

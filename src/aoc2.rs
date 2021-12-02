@@ -5,7 +5,19 @@ pub struct AOC2 {}
 impl Runner for AOC2 {
     fn run_p1(&self, input: &std::vec::Vec<std::string::String>) -> usize {
         let parsed = AOC2::parse_input(input);
-        AOC2::run_p1(&parsed) as usize
+
+        let mut depth: isize = 0;
+        let mut pos: isize = 0;
+
+        for dir in parsed {
+            match dir {
+                Direction::Forward(val) => pos += val,
+                Direction::Down(val) => depth += val,
+                Direction::Up(val) => depth -= val,
+            }
+        }
+
+        (depth * pos) as usize
     }
     fn run_p2(&self, input: &std::vec::Vec<std::string::String>) -> usize {
         let parsed = AOC2::parse_input(input);
@@ -31,10 +43,6 @@ impl Runner for AOC2 {
 
         (depth * pos) as usize
     }
-    fn test(&self, input: &std::vec::Vec<std::string::String>) -> usize {
-        let parsed = AOC2::parse_input(input);
-        AOC2::run_p1(&parsed) as usize
-    }
 }
 
 enum Direction {
@@ -56,20 +64,5 @@ impl AOC2 {
             }
         })
         .collect()
-    }
-
-    fn run_p1(input: &Vec<Direction>) -> isize {
-        let mut depth: isize = 0;
-        let mut pos: isize = 0;
-
-        for dir in input {
-            match dir {
-                Direction::Forward(val) => pos += val,
-                Direction::Down(val) => depth += val,
-                Direction::Up(val) => depth -= val,
-            }
-        }
-
-        depth * pos
     }
 }
