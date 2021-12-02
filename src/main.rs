@@ -1,11 +1,13 @@
 use crate::runner::Runner;
 
 mod aoc1;
+mod aoc2;
 mod runner;
 
-fn get_runner(day: usize) -> impl Runner {
+fn get_runner(day: usize) -> Box<dyn Runner> {
     match day {
-        1 => aoc1::AOC1 {},
+        1 => Box::new(aoc1::AOC1 {}),
+        2 => Box::new(aoc2::AOC2 {}),
         _ => panic!("Runner for day {} not implemented", day),
     }
 }
