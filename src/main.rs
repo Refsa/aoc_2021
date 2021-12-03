@@ -2,12 +2,14 @@ use crate::runner::Runner;
 
 mod aoc1;
 mod aoc2;
+mod aoc3;
 mod runner;
 
 fn get_runner(day: usize) -> Box<dyn Runner> {
     match day {
         1 => Box::new(aoc1::AOC1 {}),
         2 => Box::new(aoc2::AOC2 {}),
+        3 => Box::new(aoc3::AOC3 {}),
         _ => panic!("Runner for day {} not implemented", day),
     }
 }
@@ -23,37 +25,28 @@ fn main() {
     };
 
     let runner = get_runner(day);
+    let input = get_input(day);
+    let test_data = get_test_data(day);
 
-    // Run test input
-    {
-        let test_data = get_test_data(day);
-
-        let test_answer = runner.run_p1(&test_data.input);
-        if test_answer != test_data.answer_p1 {
-            println!(
-                "Failed p1 test: expected {} - got answer {}",
-                test_data.answer_p1, test_answer
-            );
-            return;
-        }
-
-        let test_answer = runner.run_p2(&test_data.input);
-        if test_answer != test_data.answer_p2 {
-            println!(
-                "Failed p1 test: expected {} - got answer {}",
-                test_data.answer_p2, test_answer
-            );
-            return;
-        }
-
-        println!("Test success");
+    let test_answer = runner.run_p1(&test_data.input);
+    if test_answer != test_data.answer_p1 {
+        println!(
+            "Failed p1 test: expected {} - got answer {}",
+            test_data.answer_p1, test_answer
+        );
+        return;
     }
-    // Run puzzle input
-    {
-        let input = get_input(day);
-        println!("Part 1: {}", runner.run_p1(&input));
-        println!("Part 2: {}", runner.run_p2(&input));
+    println!("Part 1: {}", runner.run_p1(&input));
+
+    let test_answer = runner.run_p2(&test_data.input);
+    if test_answer != test_data.answer_p2 {
+        println!(
+            "Failed p2 test: expected {} - got answer {}",
+            test_data.answer_p2, test_answer
+        );
+        return;
     }
+    println!("Part 2: {}", runner.run_p2(&input));
 }
 
 fn read_file(path: String) -> Result<Vec<String>, String> {
