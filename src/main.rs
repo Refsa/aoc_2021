@@ -3,6 +3,7 @@ use crate::runner::Runner;
 mod aoc1;
 mod aoc2;
 mod aoc3;
+mod aoc4;
 mod runner;
 
 fn get_runner(day: usize) -> Box<dyn Runner> {
@@ -10,6 +11,7 @@ fn get_runner(day: usize) -> Box<dyn Runner> {
         1 => Box::new(aoc1::AOC1 {}),
         2 => Box::new(aoc2::AOC2 {}),
         3 => Box::new(aoc3::AOC3 {}),
+        4 => Box::new(aoc4::AOC4 {}),
         _ => panic!("Runner for day {} not implemented", day),
     }
 }
