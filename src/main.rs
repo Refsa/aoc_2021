@@ -5,6 +5,7 @@ mod aoc2;
 mod aoc3;
 mod aoc4;
 mod aoc5;
+mod aoc6;
 mod runner;
 
 fn get_runner(day: usize) -> Box<dyn Runner> {
@@ -14,6 +15,7 @@ fn get_runner(day: usize) -> Box<dyn Runner> {
         3 => Box::new(aoc3::AOC3 {}),
         4 => Box::new(aoc4::AOC4 {}),
         5 => Box::new(aoc5::AOC5 {}),
+        6 => Box::new(aoc6::AOC6 {}),
         _ => panic!("Runner for day {} not implemented", day),
     }
 }
@@ -32,25 +34,29 @@ fn main() {
     let input = get_input(day);
     let test_data = get_test_data(day);
 
+    print!("Test P1 | ");
     let test_answer = runner.run_p1(&test_data.input);
     if test_answer != test_data.answer_p1 {
         println!(
-            "Failed p1 test: expected {} - got answer {}",
+            "Failed: expected {} - got answer {}",
             test_data.answer_p1, test_answer
         );
         return;
     }
-    println!("Part 1: {}", runner.run_p1(&input));
+    println!("Success");
+    println!("Part 1  | {}", runner.run_p1(&input));
 
+    print!("Test P2 | ");
     let test_answer = runner.run_p2(&test_data.input);
     if test_answer != test_data.answer_p2 {
         println!(
-            "Failed p2 test: expected {} - got answer {}",
+            "Failed: expected {} - got answer {}",
             test_data.answer_p2, test_answer
         );
         return;
     }
-    println!("Part 2: {}", runner.run_p2(&input));
+    println!("Success");
+    println!("Part 2  | {}", runner.run_p2(&input));
 }
 
 fn read_file(path: String) -> Result<Vec<String>, String> {
