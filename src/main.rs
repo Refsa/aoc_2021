@@ -46,7 +46,12 @@ fn main() {
         return;
     }
     println!("Success");
-    println!("Part 1  | {}", runner.run_p1(&input));
+
+    let mut sw = stopwatch2::Stopwatch::default();
+    sw.start();
+    let p1 = runner.run_p1(&input);
+    sw.stop();
+    println!("Part 1  | {} | {:?}", p1, sw.elapsed());
 
     print!("Test P2 | ");
     let test_answer = runner.run_p2(&test_data.input);
@@ -58,7 +63,12 @@ fn main() {
         return;
     }
     println!("Success");
-    println!("Part 2  | {}", runner.run_p2(&input));
+
+    let mut sw = stopwatch2::Stopwatch::default();
+    sw.start();
+    let p2 = runner.run_p2(&input);
+    sw.stop();
+    println!("Part 2  | {} | {:?}", p2, sw.elapsed());
 }
 
 fn read_file(path: String) -> Result<Vec<String>, String> {

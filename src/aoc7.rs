@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use crate::Runner;
 
 pub struct AOC7 {}
@@ -20,10 +19,9 @@ impl Runner for AOC7 {
         let parsed = Self::parse(input);
 
         let (min, max) = parsed.iter().fold((0isize, 0isize), |acc, &e| (acc.0.min(e), acc.1.max(e)));
-        let cnt = max - min + 1;
 
         let mut costs: Vec<isize> = vec![0isize; parsed.len()];
-        let mut minCost = (0, 1 << 32);
+        let mut min_cost = (0, 1 << 32);
 
         for i in min..=max {
             for (idx, p) in parsed.iter().enumerate() {
@@ -31,22 +29,21 @@ impl Runner for AOC7 {
             }
             
             let cost = costs.iter().sum();
-            if cost < minCost.1 {
-                minCost.1 = cost;
-                minCost.0 = i;
+            if cost < min_cost.1 {
+                min_cost.1 = cost;
+                min_cost.0 = i;
             }
         }
 
-        minCost.1 as usize
+        min_cost.1 as usize
     }
     fn run_p2(&self, input: &std::vec::Vec<std::string::String>) -> usize {
         let parsed = Self::parse(input);
 
         let (min, max) = parsed.iter().fold((0isize, 0isize), |acc, &e| (acc.0.min(e), acc.1.max(e)));
-        let cnt = max - min + 1;
 
         let mut costs: Vec<isize> = vec![0isize; parsed.len()];
-        let mut minCost = (0, 1 << 32);
+        let mut min_cost = 1 << 32;
 
         for i in min..=max {
             for (idx, p) in parsed.iter().enumerate() {
@@ -54,12 +51,11 @@ impl Runner for AOC7 {
             }
             
             let cost = costs.iter().sum();
-            if cost < minCost.1 {
-                minCost.1 = cost;
-                minCost.0 = i;
+            if cost < min_cost {
+                min_cost = cost;
             }
         }
 
-        minCost.1 as usize
+        min_cost as usize
     }
 }
