@@ -2,27 +2,28 @@ use crate::Runner;
 use byteorder::*;
 use std::rc::Rc;
 
-pub struct AOC3 {}
+#[derive(Default)]
+pub struct AOC3 {
+	parsed: (usize, Vec<u32>)
+}
 
-impl AOC3 {
-	pub fn parse(input: &Vec<String>) -> (usize, Vec<u32>) {
-		(
+impl Runner for AOC3 {
+	fn parse(&mut self, input: &Vec<String>) {
+		self.parsed = (
 			input[0].len(),
 			input
 				.iter()
 				.map(|e| u32::from_str_radix(&e.chars().collect::<String>(), 2).unwrap())
 				.collect(),
-		)
+		);
 	}
-}
 
-impl Runner for AOC3 {
-	fn run_p1(&self, input: &std::vec::Vec<std::string::String>) -> usize {
-		let (len, input) = Self::parse(input);
+	fn run_p1(&self) -> usize {
+		let (len, input) = &self.parsed;
 		let input = Rc::new(input);
 
-		let cnt = input.iter().fold(vec![0isize; len], |mut acc, e| {
-			for i in 0..len {
+		let cnt = input.iter().fold(vec![0isize; *len], |mut acc, e| {
+			for i in 0..*len {
 				if bit_set(*e, i as u32) {
 					acc[i] += 1;
 				} else {
@@ -35,7 +36,7 @@ impl Runner for AOC3 {
 		let mut gamma = 0isize;
 		let mut epsilon = 0isize;
 
-		for i in 0..len {
+		for i in 0..*len {
 			let e = cnt[i];
 			if e > 0 {
 				gamma |= 1 << i;
@@ -47,11 +48,11 @@ impl Runner for AOC3 {
 		(gamma * epsilon) as usize
 	}
 
-	fn run_p2(&self, input: &std::vec::Vec<std::string::String>) -> usize {
-		let (len, input) = Self::parse(input);
+	fn run_p2(&self) -> usize {
+		let (len, input) = &self.parsed;
 
 		let mut oxy_i = input.iter().collect::<Vec<&u32>>();
-		for bc in (0..len).rev() {
+		for bc in (0..*len).rev() {
 			let cnt = count_bits_p(&oxy_i, bc as u32);
 			let c = if cnt >= 0 { 1 } else { 0 };
 			
@@ -75,7 +76,7 @@ impl Runner for AOC3 {
 		// println!("{} - {:?}", oxy_i.len(), oxy);
 
 		let mut oxy_i = input.iter().collect::<Vec<&u32>>();
-		for bc in (0..len).rev() {
+		for bc in (0..*len).rev() {
 			let cnt = count_bits_p(&oxy_i, bc as u32);
 			let c = if cnt >= 0 { 1 } else { 0 };
 			

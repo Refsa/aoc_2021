@@ -1,7 +1,10 @@
 use crate::Runner;
 use std::ops::Range;
 
-pub struct AOC5 {}
+#[derive(Default)]
+pub struct AOC5 {
+    parsed: Map
+}
 
 impl AOC5 {
     fn parse_point(p: &str) -> Point {
@@ -11,31 +14,9 @@ impl AOC5 {
             y: e.parse::<isize>().unwrap(),
         }
     }
-
-    fn parse(input: &Vec<String>) -> Map {
-        let mut w = 0usize;
-        let mut h = 0usize;
-        let mut vents = Vec::new();
-
-        for l in input.iter() {
-            let (p1, p2) = l.split_once(" -> ").unwrap();
-            let p1 = Self::parse_point(p1);
-            let p2 = Self::parse_point(p2);
-
-            w = w.max(p1.x.max(p2.x) as usize);
-            h = h.max(p1.y.max(p2.y) as usize);
-
-            vents.push(Line { p1: p1, p2: p2 });
-        }
-
-        Map {
-            vents: vents,
-            size: (w + 1, h + 1),
-        }
-    }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Default, Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Point {
     x: isize,
     y: isize,
@@ -55,7 +36,7 @@ impl std::ops::Add for Point {
     }
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 struct Line {
     p1: Point,
     p2: Point,
@@ -125,7 +106,7 @@ impl Line {
     }
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 struct Map {
     vents: Vec<Line>,
     size: (usize, usize),
@@ -138,8 +119,30 @@ impl Map {
 }
 
 impl Runner for AOC5 {
-    fn run_p1(&self, input: &std::vec::Vec<std::string::String>) -> usize {
-        let map = Self::parse(input);
+    fn parse(&mut self, input: &Vec<String>) {
+        let mut w = 0usize;
+        let mut h = 0usize;
+        let mut vents = Vec::new();
+
+        for l in input.iter() {
+            let (p1, p2) = l.split_once(" -> ").unwrap();
+            let p1 = Self::parse_point(p1);
+            let p2 = Self::parse_point(p2);
+
+            w = w.max(p1.x.max(p2.x) as usize);
+            h = h.max(p1.y.max(p2.y) as usize);
+
+            vents.push(Line { p1: p1, p2: p2 });
+        }
+
+        self.parsed = Map {
+            vents: vents,
+            size: (w + 1, h + 1),
+        };
+    }
+
+    fn run_p1(&self) -> usize {
+        let map = &self.parsed;
 
         let mut overlaps = vec![0u8; map.size.0 * map.size.1];
 
@@ -157,8 +160,8 @@ impl Runner for AOC5 {
 
         overlap_count
     }
-    fn run_p2(&self, input: &std::vec::Vec<std::string::String>) -> usize {
-        let map = Self::parse(input);
+    fn run_p2(&self) -> usize {
+        let map = &self.parsed;
 
         let mut overlaps = vec![0u8; map.size.0 * map.size.1];
         for vent in map.vents.iter() {

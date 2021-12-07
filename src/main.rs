@@ -11,13 +11,13 @@ mod runner;
 
 fn get_runner(day: usize) -> Box<dyn Runner> {
     match day {
-        1 => Box::new(aoc1::AOC1 {}),
-        2 => Box::new(aoc2::AOC2 {}),
-        3 => Box::new(aoc3::AOC3 {}),
-        4 => Box::new(aoc4::AOC4 {}),
-        5 => Box::new(aoc5::AOC5 {}),
-        6 => Box::new(aoc6::AOC6 {}),
-        7 => Box::new(aoc7::AOC7 {}),
+        1 => Box::new(aoc1::AOC1::default()),
+        2 => Box::new(aoc2::AOC2::default()),
+        3 => Box::new(aoc3::AOC3::default()),
+        4 => Box::new(aoc4::AOC4::default()),
+        5 => Box::new(aoc5::AOC5::default()),
+        6 => Box::new(aoc6::AOC6::default()),
+        7 => Box::new(aoc7::AOC7::default()),
         _ => panic!("Runner for day {} not implemented", day),
     }
 }
@@ -32,12 +32,13 @@ fn main() {
         Err(_) => panic!("expected first argument to be a number"),
     };
 
-    let runner = get_runner(day);
+    let mut runner = get_runner(day);
     let input = get_input(day);
     let test_data = get_test_data(day);
 
     print!("Test P1 | ");
-    let test_answer = runner.run_p1(&test_data.input);
+    runner.parse(&test_data.input);
+    let test_answer = runner.run_p1();
     if test_answer != test_data.answer_p1 {
         println!(
             "Failed: expected {} - got answer {}",
@@ -48,13 +49,15 @@ fn main() {
     println!("Success");
 
     let mut sw = stopwatch2::Stopwatch::default();
+    runner.parse(&input);
     sw.start();
-    let p1 = runner.run_p1(&input);
+    let p1 = runner.run_p1();
     sw.stop();
-    println!("Part 1  | {} | {:?}", p1, sw.elapsed());
+    println!("Part 1  | {:15} | {:?}", p1, sw.elapsed());
 
     print!("Test P2 | ");
-    let test_answer = runner.run_p2(&test_data.input);
+    runner.parse(&test_data.input);
+    let test_answer = runner.run_p2();
     if test_answer != test_data.answer_p2 {
         println!(
             "Failed: expected {} - got answer {}",
@@ -65,10 +68,11 @@ fn main() {
     println!("Success");
 
     let mut sw = stopwatch2::Stopwatch::default();
+    runner.parse(&input);
     sw.start();
-    let p2 = runner.run_p2(&input);
+    let p2 = runner.run_p2();
     sw.stop();
-    println!("Part 2  | {} | {:?}", p2, sw.elapsed());
+    println!("Part 2  | {:15} | {:?}", p2, sw.elapsed());
 }
 
 fn read_file(path: String) -> Result<Vec<String>, String> {

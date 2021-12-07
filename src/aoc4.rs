@@ -1,8 +1,11 @@
 use crate::Runner;
 
-pub struct AOC4 {}
+#[derive(Default)]
+pub struct AOC4 {
+    parsed: Bingo,
+}
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 struct Board {
     data: [u8; 25],
     marks: [bool; 25],
@@ -66,14 +69,15 @@ impl Board {
     }
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug, Clone)]
 struct Bingo {
     draws: Vec<u8>,
     boards: Vec<Board>,
 }
 
-impl AOC4 {
-    fn parse(input: &Vec<String>) -> Bingo {
+
+impl Runner for AOC4 {
+    fn parse(&mut self, input: &Vec<String>) {
         let draws: Vec<u8> = input[0]
             .split_terminator(",")
             .map(|e| e.parse::<u8>().unwrap())
@@ -97,16 +101,14 @@ impl AOC4 {
             });
         }
 
-        Bingo {
+        self.parsed = Bingo {
             draws: draws,
             boards: boards,
-        }
+        };
     }
-}
 
-impl Runner for AOC4 {
-    fn run_p1(&self, input: &std::vec::Vec<std::string::String>) -> usize {
-        let mut bingo = Self::parse(input);
+    fn run_p1(&self) -> usize {
+        let mut bingo = self.parsed.clone();
 
         let mut last_draw = 0u8;
         let mut winner: Option<Board> = None;
@@ -133,8 +135,8 @@ impl Runner for AOC4 {
         }
     }
 
-    fn run_p2(&self, input: &std::vec::Vec<std::string::String>) -> usize {
-        let mut bingo = Self::parse(input);
+    fn run_p2(&self) -> usize {
+        let mut bingo = self.parsed.clone();
 
         let mut last_draw = 0u8;
         let mut winner: Option<Board> = None;

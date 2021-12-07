@@ -1,5 +1,6 @@
 
 pub trait Runner {
-    fn run_p1(&self, input: &Vec<String>) -> usize;
-    fn run_p2(&self, input: &Vec<String>) -> usize;
+    fn parse(&mut self, input: &Vec<String>);
+    fn run_p1(&self) -> usize;
+    fn run_p2(&self) -> usize;
 }
