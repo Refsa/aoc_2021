@@ -3,7 +3,7 @@ use std::ops::Range;
 
 #[derive(Default)]
 pub struct AOC5 {
-    parsed: Map
+    parsed: Map,
 }
 
 impl AOC5 {
@@ -54,19 +54,21 @@ impl Line {
         self.p1.x == self.p2.x
     }
 
-    fn get_points_cardinal(&self) -> Vec<Point> {
+    fn get_points_cardinal(&self, container: &mut Vec<Point>) {
         if self.is_horizontal() {
             let (s, e) = (self.p1.x.min(self.p2.x), self.p1.x.max(self.p2.x));
-            (s..=e).map(|e| Point { x: e, y: self.p1.y }).collect()
+            for p in (s..=e).map(|e| Point { x: e, y: self.p1.y }) {
+                container.push(p);
+            }
         } else if self.is_vertical() {
             let (s, e) = (self.p1.y.min(self.p2.y), self.p1.y.max(self.p2.y));
-            (s..=e).map(|e| Point { x: self.p1.x, y: e }).collect()
-        } else {
-            Vec::new()
+            for p in (s..=e).map(|e| Point { x: self.p1.x, y: e }) {
+                container.push(p);
+            }
         }
     }
 
-    fn get_points_diag(&self) -> Vec<Point> {
+    fn get_points_diag(&self, container: &mut Vec<Point>) {
         let dx = (self.p2.x - self.p1.x).abs();
         let sx = if self.p1.x < self.p2.x { 1 } else { -1 };
         let dy = -(self.p2.y - self.p1.y).abs();
@@ -76,9 +78,8 @@ impl Line {
         let mut x0 = self.p1.x;
         let mut y0 = self.p1.y;
 
-        let mut points = Vec::new();
         loop {
-            points.push(Point::new(x0, y0));
+            container.push(Point::new(x0, y0));
             if x0 == self.p2.x || y0 == self.p2.y {
                 break;
             }
@@ -93,15 +94,13 @@ impl Line {
                 y0 += sy;
             }
         }
-
-        points
     }
 
-    fn get_points(&self) -> Vec<Point> {
+    fn get_points(&self, container: &mut Vec<Point>) {
         if self.is_horizontal() || self.is_vertical() {
-            return self.get_points_cardinal();
+            return self.get_points_cardinal(container);
         } else {
-            return self.get_points_diag();
+            return self.get_points_diag(container);
         }
     }
 }
@@ -145,38 +144,39 @@ impl Runner for AOC5 {
         let map = &self.parsed;
 
         let mut overlaps = vec![0u8; map.size.0 * map.size.1];
+        let mut points = Vec::new();
 
-        for vent in map.vents.iter().filter(|e| e.is_cardinal()) {
-            let points = vent.get_points_cardinal();
+        map.vents.iter().filter(|e| e.is_cardinal()).fold(0usize, |mut acc, vent| {
+            points.clear();
+            vent.get_points_cardinal(&mut points);
 
-            for p in points {
-                overlaps[map.to_1d(&p)] += 1;
+            for p in &points {
+                overlaps[map.to_1d(p)] += 1;
+                if overlaps[map.to_1d(p)] == 2 {
+                    acc += 1;
+                }
             }
-        }
-
-        let overlap_count = overlaps
-            .iter()
-            .fold(0usize, |acc, &e| if e >= 2 { acc + 1 } else { acc });
-
-        overlap_count
+            acc
+        })
     }
     fn run_p2(&self) -> usize {
         let map = &self.parsed;
 
         let mut overlaps = vec![0u8; map.size.0 * map.size.1];
-        for vent in map.vents.iter() {
-            let points = vent.get_points();
+        let mut points = Vec::new();
 
-            for p in points {
-                overlaps[map.to_1d(&p.into())] += 1;
+        map.vents.iter().fold(0usize, |mut acc, vent| {
+            points.clear();
+            vent.get_points(&mut points);
+
+            for p in &points {
+                overlaps[map.to_1d(p)] += 1;
+                if overlaps[map.to_1d(p)] == 2 {
+                    acc += 1;
+                }
             }
-        }
-
-        let overlap_count = overlaps
-            .iter()
-            .fold(0usize, |acc, &e| if e >= 2 { acc + 1 } else { acc });
-
-        overlap_count
+            acc
+        })
     }
 }
 
@@ -206,8 +206,8 @@ mod tests {
             p1: Point::new(3, 4),
             p2: Point::new(1, 4),
         };
-
-        let points = l.get_points();
+        let mut points = Vec::new();
+        l.get_points(&mut points);
         let expected = vec![Point::new(3, 4), Point::new(2, 4), Point::new(1, 4)];
 
         assert_eq!(expected, points);
@@ -221,7 +221,8 @@ mod tests {
             p1: Point::new(3, 3),
             p2: Point::new(0, 0),
         };
-
+        let mut points = Vec::new();
+        l.get_points(&mut points);
         assert_eq!(
             vec![
                 Point::new(3, 3),
@@ -229,7 +230,7 @@ mod tests {
                 Point::new(1, 1),
                 Point::new(0, 0),
             ],
-            l.get_points()
+            points
         );
     }
 }
