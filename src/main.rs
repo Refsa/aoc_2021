@@ -31,6 +31,14 @@ fn main() {
         Ok(day) => day,
         Err(_) => panic!("expected first argument to be a number"),
     };
+    let runs = if args.len() >= 3 {
+        match args[2].parse::<usize>() {
+            Ok(runs) => runs,
+            Err(_) => 1,
+        }
+    } else {
+        1
+    };
 
     let mut runner = get_runner(day);
     let input = get_input(day);
@@ -51,9 +59,13 @@ fn main() {
     let mut sw = stopwatch2::Stopwatch::default();
     runner.parse(&input);
     sw.start();
-    let p1 = runner.run_p1();
+    let mut p1 = 0usize;
+    for _ in 0..runs {
+        p1 = runner.run_p1();
+    }
     sw.stop();
-    println!("Part 1  | {:15} | {:?}", p1, sw.elapsed());
+    let elapsed = std::time::Duration::from_nanos((sw.elapsed().as_nanos() / runs as u128) as u64);
+    println!("Part 1  | {:15} | {:?}", p1, elapsed);
 
     print!("Test P2 | ");
     runner.parse(&test_data.input);
@@ -70,9 +82,13 @@ fn main() {
     let mut sw = stopwatch2::Stopwatch::default();
     runner.parse(&input);
     sw.start();
-    let p2 = runner.run_p2();
+    let mut p2 = 0usize;
+    for _ in 0..runs {
+        p2 = runner.run_p2();
+    }
     sw.stop();
-    println!("Part 2  | {:15} | {:?}", p2, sw.elapsed());
+    let elapsed = std::time::Duration::from_nanos((sw.elapsed().as_nanos() / runs as u128) as u64);
+    println!("Part 2  | {:15} | {:?}", p2, elapsed);
 }
 
 fn read_file(path: String) -> Result<Vec<String>, String> {
