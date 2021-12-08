@@ -72,7 +72,11 @@ fn sort_by_len(a: &Vec<u8>, b: &Vec<u8>) -> Ordering {
 fn parse_digits(input: &str) -> Vec<Vec<u8>> {
     input
         .split_terminator(" ")
-        .map(|v| v.chars().map(|c| to_segment_id(&c)).collect())
+        .map(|v| {
+            let mut e = v.chars().map(|c| to_segment_id(&c)).collect::<Vec<u8>>();
+            e.sort();
+            e
+        })
         .collect()
 }
 
@@ -99,42 +103,27 @@ impl Runner for AOC8 {
             .count()
     }
     fn run_p2(&self) -> usize {
-        /* self.parsed
-        .iter()
-        .fold(0usize, |acc, e| acc + solve_line(e)) */
-
-        solve_line(&self.parsed[1]);
-        solve_line(&self.parsed[2]);
-        0
+        self.parsed
+            .iter()
+            .fold(0usize, |acc, e| acc + solve_line(e))
     }
 }
 
 fn solve_line(line: &Line) -> usize {
     let lookup = solve_signal(line);
 
-    let mut num = "".to_string();
-    for n in &line.right_part {
-        match n.len() {
-            2 => num = format!("{}{}", num, 1),
-            3 => num = format!("{}{}", num, 7),
-            4 => num = format!("{}{}", num, 4),
-            7 => num = format!("{}{}", num, 8),
-            _ => {
-                let mut digit = Vec::new();
-                for d in n {
-                    digit.push(lookup.iter().position(|v| v == d).unwrap() as u8);
-                }
-                digit.sort();
-                println!("{:?} - {:?} - ", n, digit);
-                let digit = to_digit(&digit[..]);
-                // println!("{:?} ", digit);
-                num = format!("{}{}", num, digit.unwrap());
+    line.right_part
+        .iter()
+        .enumerate()
+        .fold(0usize, |acc, (i, n)| {
+            let mut digit = Vec::new();
+            for d in n {
+                digit.push(lookup.iter().position(|v| v == d).unwrap() as u8);
             }
-        }
-    }
-    let num = num.parse::<usize>().unwrap();
-    println!("\n{}", num);
-    num
+            digit.sort();
+            let num = to_digit(&digit[..]).unwrap() as usize;
+            acc + 10u32.pow((3 - i) as u32) as usize * num
+        })
 }
 
 /*
@@ -173,14 +162,12 @@ lens:
 fn solve_signal(input: &Line) -> [u8; 7] {
     let mut counts = vec![Vec::new(); 7];
     let mut ordering = [255u8; 7];
-    println!();
 
     for (i, d) in input.left_part.iter().enumerate() {
         for v in d {
             counts[*v as usize].push(i as u8);
         }
     }
-    println!("Counts: {:?}", counts);
 
     let one = input
         .left_part
@@ -192,12 +179,6 @@ fn solve_signal(input: &Line) -> [u8; 7] {
         .left_part
         .iter()
         .filter(|e| e.len() == 3)
-        .nth(0)
-        .unwrap();
-    let four = input
-        .left_part
-        .iter()
-        .filter(|e| e.len() == 4)
         .nth(0)
         .unwrap();
     let eight = input
@@ -217,7 +198,46 @@ fn solve_signal(input: &Line) -> [u8; 7] {
         }
     }
 
-    println!("Segs: {:?}", ordering.map(|e| to_segment_char(&e)));
+    let b = ordering[to_segment_id(&'b') as usize];
+    let e = ordering[to_segment_id(&'e') as usize];
+    let f = ordering[to_segment_id(&'f') as usize];
+    let (a_one, b_one) = (one[0], one[1]);
+    if f == a_one {
+        ordering[to_segment_id(&'c') as usize] = b_one;
+    } else {
+        ordering[to_segment_id(&'c') as usize] = a_one;
+    }
+
+    let c = ordering[to_segment_id(&'c') as usize];
+    let (a_sev, b_sev, c_sev) = (seven[0], seven[1], seven[2]);
+    if (c == a_sev && f == b_sev) || (c == b_sev && f == a_sev) {
+        ordering[to_segment_id(&'a') as usize] = c_sev;
+    } else if (c == b_sev && f == c_sev) || (c == c_sev && f == b_sev) {
+        ordering[to_segment_id(&'a') as usize] = a_sev;
+    } else if (c == a_sev && f == c_sev) || (c == c_sev && f == a_sev) {
+        ordering[to_segment_id(&'a') as usize] = b_sev;
+    }
+
+    let a = ordering[to_segment_id(&'a') as usize];
+    let known = [a, b, c, e, f];
+
+    let g_filter: Vec<Vec<&u8>> = input
+        .left_part
+        .iter()
+        .filter(|e| e.len() == 6)
+        .map(|e| {
+            e.iter()
+                .filter(|v| !known.contains(v))
+                .collect::<Vec<&u8>>()
+        })
+        .filter(|e| e.len() == 1)
+        .collect();
+    ordering[to_segment_id(&'g') as usize] = *g_filter[0][0];
+    let g = ordering[to_segment_id(&'g') as usize];
+
+    let known = [a, b, c, e, f, g];
+    let d = eight.iter().find(|e| !known.contains(e)).unwrap();
+    ordering[to_segment_id(&'d') as usize] = *d;
 
     ordering
 }
