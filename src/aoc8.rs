@@ -1,5 +1,4 @@
 use crate::Runner;
-use std::cmp::Ordering;
 
 #[derive(Default)]
 pub struct AOC8 {
@@ -25,19 +24,6 @@ fn to_segment_id(input: &char) -> u8 {
     }
 }
 
-fn to_segment_char(input: &u8) -> char {
-    match input {
-        0 => 'a',
-        1 => 'b',
-        2 => 'c',
-        3 => 'd',
-        4 => 'e',
-        5 => 'f',
-        6 => 'g',
-        _ => 'X',
-    }
-}
-
 const ZERO: &[u8] = &[0, 1, 2, 4, 5, 6];
 const ONE: &[u8] = &[2, 5];
 const TWO: &[u8] = &[0, 2, 3, 4, 6];
@@ -49,24 +35,20 @@ const SEVEN: &[u8] = &[0, 2, 5];
 const EIGHT: &[u8] = &[0, 1, 2, 3, 4, 5, 6];
 const NINE: &[u8] = &[0, 1, 2, 3, 5, 6];
 
-fn to_digit(input: &[u8]) -> Option<u8> {
+fn to_digit(input: &[u8]) -> u8 {
     match input {
-        ZERO => Some(0),
-        ONE => Some(1),
-        TWO => Some(2),
-        THREE => Some(3),
-        FOUR => Some(4),
-        FIVE => Some(5),
-        SIX => Some(6),
-        SEVEN => Some(7),
-        EIGHT => Some(8),
-        NINE => Some(9),
-        _ => None,
+        ZERO => 0,
+        ONE => 1,
+        TWO => 2,
+        THREE => 3,
+        FOUR => 4,
+        FIVE => 5,
+        SIX => 6,
+        SEVEN => 7,
+        EIGHT => 8,
+        NINE => 9,
+        _ => panic!("out of range"),
     }
-}
-
-fn sort_by_len(a: &Vec<u8>, b: &Vec<u8>) -> Ordering {
-    a.len().cmp(&b.len())
 }
 
 fn parse_digits(input: &str) -> Vec<Vec<u8>> {
@@ -111,19 +93,20 @@ impl Runner for AOC8 {
 
 fn solve_line(line: &Line) -> usize {
     let lookup = solve_signal(line);
+    let mut digit = Vec::new();
 
     line.right_part
         .iter()
         .enumerate()
-        .fold(0usize, |acc, (i, n)| {
-            let mut digit = Vec::new();
+        .fold(0u32, |acc, (i, n)| {
+            digit.clear();
             for d in n {
                 digit.push(lookup.iter().position(|v| v == d).unwrap() as u8);
             }
             digit.sort();
-            let num = to_digit(&digit[..]).unwrap() as usize;
-            acc + 10u32.pow((3 - i) as u32) as usize * num
-        })
+            let num = to_digit(&digit[..]) as u32;
+            acc + 10u32.pow((3 - i) as u32) * num
+        }) as usize
 }
 
 /*
