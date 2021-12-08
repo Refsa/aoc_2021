@@ -34,7 +34,7 @@ fn to_segment_char(input: &u8) -> char {
         4 => 'e',
         5 => 'f',
         6 => 'g',
-        _ => panic!("input out of range"),
+        _ => 'X',
     }
 }
 
@@ -45,7 +45,7 @@ const THREE: &[u8] = &[0, 2, 3, 5, 6];
 const FOUR: &[u8] = &[1, 2, 3, 5];
 const FIVE: &[u8] = &[0, 1, 3, 5, 6];
 const SIX: &[u8] = &[0, 1, 3, 4, 5, 6];
-const SEVEN: &[u8] = &[0, 3, 5];
+const SEVEN: &[u8] = &[0, 2, 5];
 const EIGHT: &[u8] = &[0, 1, 2, 3, 4, 5, 6];
 const NINE: &[u8] = &[0, 1, 2, 3, 5, 6];
 
@@ -72,52 +72,40 @@ fn sort_by_len(a: &Vec<u8>, b: &Vec<u8>) -> Ordering {
 fn parse_digits(input: &str) -> Vec<Vec<u8>> {
     input
         .split_terminator(" ")
-        .map(|v| v.chars())
-        .map(|v| v.map(|c| to_segment_id(&c)).collect())
+        .map(|v| v.chars().map(|c| to_segment_id(&c)).collect())
         .collect()
 }
 
 impl Runner for AOC8 {
     fn parse(&mut self, input: &std::vec::Vec<std::string::String>) {
-        let lines: Vec<Line> = input
+        self.parsed = input
             .iter()
             .map(|e| {
-                let (l, r) = e.split_once(" | ").unwrap();
-
-                let mut l = parse_digits(l);
-                // l.sort_by(sort_by_len);
-                let r = parse_digits(r);
-                // r.sort_by(sort_by_len);
-
-                Line {
-                    left_part: l,
-                    right_part: r,
-                }
+                e.split_once(" | ")
+                    .map(|(l, r)| Line {
+                        left_part: parse_digits(l),
+                        right_part: parse_digits(r),
+                    })
+                    .unwrap()
             })
             .collect();
-        self.parsed = lines;
     }
     fn run_p1(&self) -> usize {
+        let wanted = [2, 3, 4, 7];
         self.parsed
             .iter()
             .flat_map(|e| e.right_part.clone())
-            .filter(|e| match e.len() {
-                2 => true,
-                3 => true,
-                4 => true,
-                7 => true,
-                _ => false,
-            })
+            .filter(|e| wanted.contains(&e.len()))
             .count()
     }
     fn run_p2(&self) -> usize {
-        self.parsed
-            .iter()
-            .fold(0usize, |acc, e| acc + solve_line(e))
+        /* self.parsed
+        .iter()
+        .fold(0usize, |acc, e| acc + solve_line(e)) */
 
-        // solve_line(&self.parsed[1]);
-        // solve_line(&self.parsed[2]);
-        // 0
+        solve_line(&self.parsed[1]);
+        solve_line(&self.parsed[2]);
+        0
     }
 }
 
@@ -126,27 +114,23 @@ fn solve_line(line: &Line) -> usize {
 
     let mut num = "".to_string();
     for n in &line.right_part {
-        /* if [2, 3, 4].contains(&n.len()) {
-            let digit = match n.len() {
-                2 => 1,
-                3 => 7,
-                4 => 4,
-                _ => panic!(),
-            };
-            num = format!("{}{}", num, digit);
-        } else */ /* {
-                      let mut digit = Vec::new();
-                      for d in n {
-                          digit.push(lookup.iter().position(|v| v == d).unwrap() as u8);
-                      }
-                      digit.sort();
-                      print!("{:?} - {:?} - ", n, digit);
-
-                      let digit = to_digit(&digit[..]);
-                      println!("{:?} ", digit);
-
-                      num = format!("{}{}", num, digit);
-                  } */
+        match n.len() {
+            2 => num = format!("{}{}", num, 1),
+            3 => num = format!("{}{}", num, 7),
+            4 => num = format!("{}{}", num, 4),
+            7 => num = format!("{}{}", num, 8),
+            _ => {
+                let mut digit = Vec::new();
+                for d in n {
+                    digit.push(lookup.iter().position(|v| v == d).unwrap() as u8);
+                }
+                digit.sort();
+                println!("{:?} - {:?} - ", n, digit);
+                let digit = to_digit(&digit[..]);
+                // println!("{:?} ", digit);
+                num = format!("{}{}", num, digit.unwrap());
+            }
+        }
     }
     let num = num.parse::<usize>().unwrap();
     println!("\n{}", num);
@@ -176,130 +160,64 @@ counts:
 
     a: 8 - 0, 2, 3, 5, 6, 7, 8, 9 | 5 unique
     c: 8 - 0, 1, 2, 3, 4, 7, 8, 9 | 5 unique
+
+lens:
+    2 : 1 - c, f
+    3 : 7 - a, c f
+    4 : 4 - b, c, d, f
+    5 : 2, 3, 5
+    6 : 0, 6, 9
+    7 : 8 - a, b, c, d, e, f
 */
 
-fn solve_signal(input: &Line) -> Vec<[u8; 7]> {
-    let mut counts = vec![(0u8, Vec::new()); 7];
+fn solve_signal(input: &Line) -> [u8; 7] {
+    let mut counts = vec![Vec::new(); 7];
+    let mut ordering = [255u8; 7];
     println!();
 
     for (i, d) in input.left_part.iter().enumerate() {
-        // println!("{:?}", d);
-
         for v in d {
-            counts[*v as usize].0 += 1;
-            counts[*v as usize].1.push(i);
+            counts[*v as usize].push(i as u8);
         }
     }
-
     println!("Counts: {:?}", counts);
 
-    let mut ordering = [0u8; 7];
-    // e
-    {
-        let idx = {
-            let cidxs: Vec<(usize, &(u8, Vec<usize>))> = counts
-                .iter()
-                .enumerate()
-                .filter(|(i, e)| e.0 == 4)
-                .collect();
-            ordering[to_segment_id(&'e') as usize] = cidxs[0].0 as u8;
-            cidxs[0].0
-        };
-        // counts.remove(idx);
-    }
+    let one = input
+        .left_part
+        .iter()
+        .filter(|e| e.len() == 2)
+        .nth(0)
+        .unwrap();
+    let seven = input
+        .left_part
+        .iter()
+        .filter(|e| e.len() == 3)
+        .nth(0)
+        .unwrap();
+    let four = input
+        .left_part
+        .iter()
+        .filter(|e| e.len() == 4)
+        .nth(0)
+        .unwrap();
+    let eight = input
+        .left_part
+        .iter()
+        .filter(|e| e.len() == 7)
+        .nth(0)
+        .unwrap();
 
-    // b
-    {
-        let idx = {
-            let cidxs: Vec<(usize, &(u8, Vec<usize>))> = counts
-                .iter()
-                .enumerate()
-                .filter(|(i, e)| e.0 == 6)
-                .collect();
-            ordering[to_segment_id(&'b') as usize] = cidxs[0].0 as u8;
-            cidxs[0].0
-        };
-        // counts.remove(idx);
-    }
-
-    // f
-    {
-        let idx = {
-            let cidxs: Vec<(usize, &(u8, Vec<usize>))> = counts
-                .iter()
-                .enumerate()
-                .filter(|(i, e)| e.0 == 9)
-                .collect();
-            ordering[to_segment_id(&'f') as usize] = cidxs[0].0 as u8;
-            cidxs[0].0
-        };
-        // counts.remove(idx);
-    }
-
-    // a or c
-    {
-        let cidxs: Vec<(usize, &(u8, Vec<usize>))> = counts
-            .iter()
-            .enumerate()
-            .filter(|(i, e)| e.0 == 8)
-            .collect();
-
-        let numba_one = input
-            .left_part
-            .iter()
-            .enumerate()
-            .filter(|(i, e)| e.len() == 2)
-            .nth(0)
-            .unwrap();
-
-        println!("{:?} | {:?}", cidxs, numba_one);
-
-        if cidxs[0].1 .1.contains(&(numba_one.1[0] as usize))
-            && cidxs[0].1 .1.contains(&(numba_one.1[1] as usize))
-        {
-            ordering[to_segment_id(&'c') as usize] = cidxs[0].0 as u8;
-            ordering[to_segment_id(&'a') as usize] = cidxs[1].0 as u8;
-        } else {
-            ordering[to_segment_id(&'a') as usize] = cidxs[0].0 as u8;
-            ordering[to_segment_id(&'c') as usize] = cidxs[1].0 as u8;
+    for i in 0..7 {
+        let c = &counts[i];
+        match c.len() {
+            4 => ordering[to_segment_id(&'e') as usize] = i as u8,
+            6 => ordering[to_segment_id(&'b') as usize] = i as u8,
+            9 => ordering[to_segment_id(&'f') as usize] = i as u8,
+            _ => (),
         }
     }
 
-    // g or d
-    {
-        let cidxs: Vec<(usize, &(u8, Vec<usize>))> = counts
-            .iter()
-            .enumerate()
-            .filter(|(i, e)| e.0 == 7)
-            .collect();
+    println!("Segs: {:?}", ordering.map(|e| to_segment_char(&e)));
 
-        let numba_four = input
-            .left_part
-            .iter()
-            .enumerate()
-            .filter(|(i, e)| e.len() == 4)
-            .nth(0)
-            .unwrap();
-
-        println!("{:?} | {:?}", cidxs, numba_four);
-
-        if cidxs[0].1 .1.contains(&(numba_four.1[0] as usize))
-            && cidxs[0].1 .1.contains(&(numba_four.1[1] as usize))
-            && cidxs[0].1 .1.contains(&(numba_four.1[2] as usize))
-            && cidxs[0].1 .1.contains(&(numba_four.1[3] as usize))
-        {
-            ordering[to_segment_id(&'d') as usize] = cidxs[0].0 as u8;
-            ordering[to_segment_id(&'g') as usize] = cidxs[1].0 as u8;
-        } else {
-            ordering[to_segment_id(&'g') as usize] = cidxs[0].0 as u8;
-            ordering[to_segment_id(&'d') as usize] = cidxs[1].0 as u8;
-        }
-    }
-
-    println!("Ordering: {:?}", ordering);
-    for o in &ordering {
-        println!("{}", to_segment_char(o));
-    }
-
-    vec![ordering]
+    ordering
 }
