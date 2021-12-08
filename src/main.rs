@@ -7,6 +7,7 @@ mod aoc4;
 mod aoc5;
 mod aoc6;
 mod aoc7;
+mod aoc8;
 mod runner;
 
 fn get_runner(day: usize) -> Box<dyn Runner> {
@@ -18,6 +19,7 @@ fn get_runner(day: usize) -> Box<dyn Runner> {
         5 => Box::new(aoc5::AOC5::default()),
         6 => Box::new(aoc6::AOC6::default()),
         7 => Box::new(aoc7::AOC7::default()),
+        8 => Box::new(aoc8::AOC8::default()),
         _ => panic!("Runner for day {} not implemented", day),
     }
 }
