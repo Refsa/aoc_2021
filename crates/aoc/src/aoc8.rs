@@ -55,9 +55,7 @@ fn parse_digits(input: &str) -> Vec<Vec<u8>> {
     input
         .split_terminator(" ")
         .map(|v| {
-            let mut e = v.chars().map(|c| to_segment_id(&c)).collect::<Vec<u8>>();
-            e.sort();
-            e
+            v.chars().map(|c| to_segment_id(&c)).collect::<Vec<u8>>()
         })
         .collect()
 }
@@ -78,11 +76,13 @@ impl Runner for AOC8 {
     }
     fn run_p1(&self) -> usize {
         let wanted = [2, 3, 4, 7];
-        self.parsed
-            .iter()
-            .flat_map(|e| e.right_part.clone())
-            .filter(|e| wanted.contains(&e.len()))
-            .count()
+        self.parsed.iter().fold(0usize, |acc, e| {
+            e.right_part
+                .iter()
+                .filter(|e| wanted.contains(&e.len()))
+                .count()
+                + acc
+        })
     }
     fn run_p2(&self) -> usize {
         self.parsed

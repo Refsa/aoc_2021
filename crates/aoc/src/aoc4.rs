@@ -19,7 +19,7 @@ impl Board {
         }
     }
 
-    fn check_bingo(&self) -> bool {
+    fn check_bingo(&self) -> Option<&Self> {
         for y in 0..5 {
             let mut sum_h = 0;
             for x in 0..5 {
@@ -29,7 +29,7 @@ impl Board {
                 }
             }
             if sum_h == 5 {
-                return true;
+                return Some(self);
             }
         }
 
@@ -42,11 +42,11 @@ impl Board {
                 }
             }
             if sum_v == 5 {
-                return true;
+                return Some(self);
             }
         }
 
-        false
+        None
     }
 
     fn sum_unmarked(&self) -> usize {
@@ -58,15 +58,6 @@ impl Board {
             }
         })
     }
-
-    fn print_board(&self) {
-        for l in 0..5 {
-            println!(
-                "{:?}",
-                self.data.iter().skip(l * 5).take(5).collect::<Vec<&u8>>()
-            );
-        }
-    }
 }
 
 #[derive(Default, Debug, Clone)]
@@ -74,7 +65,6 @@ struct Bingo {
     draws: Vec<u8>,
     boards: Vec<Board>,
 }
-
 
 impl Runner for AOC4 {
     fn parse(&mut self, input: &Vec<String>) {
@@ -115,15 +105,17 @@ impl Runner for AOC4 {
         for draw in &bingo.draws {
             last_draw = *draw;
 
-            for board in bingo.boards.iter_mut() {
-                board.check_num(last_draw);
-                if board.check_bingo() {
-                    winner = Some(*board);
-                    break;
-                }
-            }
-
-            if winner.is_some() {
+            if let Some(Some(w)) = bingo
+                .boards
+                .iter_mut()
+                .map(|e| {
+                    e.check_num(last_draw);
+                    e.check_bingo()
+                })
+                .filter(Option::is_some)
+                .nth(0)
+            {
+                winner = Some(*w);
                 break;
             }
         }
@@ -131,7 +123,7 @@ impl Runner for AOC4 {
         if let Some(winner) = winner {
             winner.sum_unmarked() * last_draw as usize
         } else {
-            0
+            unreachable!()
         }
     }
 
@@ -146,7 +138,7 @@ impl Runner for AOC4 {
             for i in (0..bingo.boards.len()).rev() {
                 let board = &mut bingo.boards[i];
                 board.check_num(last_draw);
-                if board.check_bingo() {
+                if let Some(_) = board.check_bingo() {
                     winner = Some(bingo.boards.remove(i));
                 }
             }
@@ -159,7 +151,7 @@ impl Runner for AOC4 {
         if let Some(winner) = winner {
             winner.sum_unmarked() * last_draw as usize
         } else {
-            0
+            unreachable!()
         }
     }
 }
