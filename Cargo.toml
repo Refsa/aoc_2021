@@ -8,7 +8,41 @@ edition = "2021"
 [dependencies]
 aoc = {path = "crates/aoc", version = "*"}
 
-stopwatch2 = "*"
-
-[dev.dependencies]
+[dev-dependencies]
 criterion = "0.3.5"
+
+[[bench]]
+name = "aoc1_bench"
+harness = false
+
+[[bench]]
+name = "aoc2_bench"
+harness = false
+
+[[bench]]
+name = "aoc3_bench"
+harness = false
+
+[[bench]]
+name = "aoc4_bench"
+harness = false
+
+[[bench]]
+name = "aoc5_bench"
+harness = false
+
+[[bench]]
+name = "aoc6_bench"
+harness = false
+
+[[bench]]
+name = "aoc7_bench"
+harness = false
+
+[[bench]]
+name = "aoc8_bench"
+harness = false
+
+[[bench]]
+name = "aoc9_bench"
+harness = false

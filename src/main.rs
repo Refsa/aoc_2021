@@ -1,6 +1,5 @@
 use aoc::runner::Runner;
 
-
 fn get_runner(day: usize) -> Box<dyn Runner> {
     match day {
         1 => Box::new(aoc::aoc1::AOC1::default()),
@@ -25,14 +24,6 @@ fn main() {
         Ok(day) => day,
         Err(_) => panic!("expected first argument to be a number"),
     };
-    let runs = if args.len() >= 3 {
-        match args[2].parse::<usize>() {
-            Ok(runs) => runs,
-            Err(_) => 1,
-        }
-    } else {
-        1
-    };
 
     let mut runner = get_runner(day);
     let input = get_input(day);
@@ -50,16 +41,9 @@ fn main() {
     }
     println!("Success");
 
-    let mut sw = stopwatch2::Stopwatch::default();
-    sw.start();
-    let mut p1 = 0usize;
-    for _ in 0..runs {
-        runner.parse(&input);
-        p1 = runner.run_p1();
-    }
-    sw.stop();
-    let elapsed = std::time::Duration::from_nanos((sw.elapsed().as_nanos() / runs as u128) as u64);
-    println!("Part 1  | {:15} | {:?}", p1, elapsed);
+    runner.parse(&input);
+    let p1 = runner.run_p1();
+    println!("Part 1  | {}", p1);
 
     print!("Test P2 | ");
     runner.parse(&test_data.input);
@@ -73,16 +57,8 @@ fn main() {
     }
     println!("Success");
 
-    let mut sw = stopwatch2::Stopwatch::default();
-    sw.start();
-    let mut p2 = 0usize;
-    for _ in 0..runs {
-        runner.parse(&input);
-        p2 = runner.run_p2();
-    }
-    sw.stop();
-    let elapsed = std::time::Duration::from_nanos((sw.elapsed().as_nanos() / runs as u128) as u64);
-    println!("Part 2  | {:15} | {:?}", p2, elapsed);
+    let p2 = runner.run_p2();
+    println!("Part 2  | {}", p2);
 }
 
 fn read_file(path: String) -> Result<Vec<String>, String> {
