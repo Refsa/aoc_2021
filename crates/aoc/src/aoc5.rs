@@ -1,4 +1,4 @@
-use crate::Runner;
+use crate::runner::Runner;
 use std::ops::Range;
 
 #[derive(Default)]

@@ -1,5 +1,4 @@
-use crate::Runner;
-use rayon::prelude::*;
+use crate::runner::Runner;
 
 #[derive(Default)]
 pub struct AOC6 {

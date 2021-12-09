@@ -1,4 +1,4 @@
-use crate::Runner;
+use crate::runner::Runner;
 use std::collections::HashSet;
 use std::ops::Add;
 

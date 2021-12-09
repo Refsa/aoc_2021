@@ -1,4 +1,4 @@
-use crate::Runner;
+use crate::runner::Runner;
 
 #[derive(Default)]
 pub struct AOC4 {

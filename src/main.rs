@@ -1,27 +1,17 @@
-use crate::runner::Runner;
+use aoc::runner::Runner;
 
-mod aoc1;
-mod aoc2;
-mod aoc3;
-mod aoc4;
-mod aoc5;
-mod aoc6;
-mod aoc7;
-mod aoc8;
-mod aoc9;
-mod runner;
 
 fn get_runner(day: usize) -> Box<dyn Runner> {
     match day {
-        1 => Box::new(aoc1::AOC1::default()),
-        2 => Box::new(aoc2::AOC2::default()),
-        3 => Box::new(aoc3::AOC3::default()),
-        4 => Box::new(aoc4::AOC4::default()),
-        5 => Box::new(aoc5::AOC5::default()),
-        6 => Box::new(aoc6::AOC6::default()),
-        7 => Box::new(aoc7::AOC7::default()),
-        8 => Box::new(aoc8::AOC8::default()),
-        9 => Box::new(aoc9::AOC9::default()),
+        1 => Box::new(aoc::aoc1::AOC1::default()),
+        2 => Box::new(aoc::aoc2::AOC2::default()),
+        3 => Box::new(aoc::aoc3::AOC3::default()),
+        4 => Box::new(aoc::aoc4::AOC4::default()),
+        5 => Box::new(aoc::aoc5::AOC5::default()),
+        6 => Box::new(aoc::aoc6::AOC6::default()),
+        7 => Box::new(aoc::aoc7::AOC7::default()),
+        8 => Box::new(aoc::aoc8::AOC8::default()),
+        9 => Box::new(aoc::aoc9::AOC9::default()),
         _ => panic!("Runner for day {} not implemented", day),
     }
 }
