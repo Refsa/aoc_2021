@@ -31,5 +31,13 @@ fn bench(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench);
+fn setup() -> Criterion {
+    Criterion::default().measurement_time(std::time::Duration::from_secs_f32(10.0))
+}
+
+criterion_group! {
+    name = benches;
+    config = setup();
+    targets = bench
+}
 criterion_main!(benches);

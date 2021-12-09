@@ -1,3 +1,5 @@
+use criterion::measurement::WallTime;
+use std::time::Duration;
 use aoc::aoc9::AOC9;
 use aoc::runner::Runner;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
@@ -31,5 +33,13 @@ fn bench(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench);
+fn setup() -> Criterion<WallTime> {
+    Criterion::default().measurement_time(Duration::from_secs_f32(10.0))
+}
+
+criterion_group! {
+    name = benches;
+    config = setup();
+    targets = bench
+}
 criterion_main!(benches);
