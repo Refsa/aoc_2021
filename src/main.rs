@@ -61,10 +61,10 @@ fn main() {
     println!("Success");
 
     let mut sw = stopwatch2::Stopwatch::default();
-    runner.parse(&input);
     sw.start();
     let mut p1 = 0usize;
     for _ in 0..runs {
+        runner.parse(&input);
         p1 = runner.run_p1();
     }
     sw.stop();
@@ -84,10 +84,10 @@ fn main() {
     println!("Success");
 
     let mut sw = stopwatch2::Stopwatch::default();
-    runner.parse(&input);
     sw.start();
     let mut p2 = 0usize;
     for _ in 0..runs {
+        runner.parse(&input);
         p2 = runner.run_p2();
     }
     sw.stop();
