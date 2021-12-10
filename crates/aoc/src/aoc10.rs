@@ -43,28 +43,23 @@ impl Runner for AOC10 {
     }
     fn run_p1(&self) -> usize {
         let mut postfix = Vec::new();
-        let mut sum = 0;
-
-        for l in &self.parsed {
-            postfix.clear();
-            let mut last_char = ' ';
-            for c in l {
-                if OPEN.contains(c) {
-                    postfix.push(c);
-                } else {
-                    let e = postfix.pop().unwrap();
-                    if !is_matching(*e, *c) {
-                        last_char = *c;
-                        break;
-                    }
-                }
-            }
-            if last_char != ' ' {
-                sum += to_points_p1(last_char);
-            }
-        }
-
-        sum
+        self.parsed
+            .iter()
+            .map(|l| {
+                postfix.clear();
+                l.iter()
+                    .find_map(|c| match OPEN.contains(c) {
+                        true => {
+                            postfix.push(c);
+                            None
+                        }
+                        false => {
+                            (!is_matching(*postfix.pop().unwrap(), *c)).then(|| to_points_p1(*c))
+                        }
+                    })
+                    .unwrap_or(0)
+            })
+            .sum()
     }
     fn run_p2(&self) -> usize {
         let mut postfix = Vec::new();
