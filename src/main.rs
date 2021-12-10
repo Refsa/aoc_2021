@@ -11,6 +11,7 @@ fn get_runner(day: usize) -> Box<dyn Runner> {
         7 => Box::new(aoc::aoc7::AOC7::default()),
         8 => Box::new(aoc::aoc8::AOC8::default()),
         9 => Box::new(aoc::aoc9::AOC9::default()),
+        10 => Box::new(aoc::aoc10::AOC10::default()),
         _ => panic!("Runner for day {} not implemented", day),
     }
 }
@@ -57,6 +58,7 @@ fn main() {
     }
     println!("Success");
 
+    runner.parse(&input);
     let p2 = runner.run_p2();
     println!("Part 2  | {}", p2);
 }
