@@ -67,11 +67,12 @@ impl Runner for AOC10 {
         sum
     }
     fn run_p2(&self) -> usize {
+        let mut postfix = Vec::new();
         let mut lsums: Vec<usize> = self
             .parsed
             .iter()
             .filter_map(|l| {
-                let mut postfix = Vec::new();
+                postfix.clear();
                 for c in l {
                     if OPEN.contains(c) {
                         postfix.push(*c);
@@ -82,16 +83,16 @@ impl Runner for AOC10 {
                         }
                     }
                 }
-                Some(postfix)
-            })
-            .map(|e| {
-                e.iter()
-                    .rev()
-                    .fold(0usize, |acc, &e| (5 * acc) + to_points_p2(e))
+                Some(
+                    postfix
+                        .iter()
+                        .rev()
+                        .fold(0usize, |acc, &e| (5 * acc) + to_points_p2(e)),
+                )
             })
             .collect();
 
-        lsums.sort();
+        lsums.sort_unstable();
 
         lsums[lsums.len() / 2]
     }
