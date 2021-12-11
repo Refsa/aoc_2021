@@ -47,7 +47,6 @@ impl Into<Point> for Index {
 struct Cell {
     value: u8,
     flashed: bool,
-    visited: bool,
 }
 
 #[derive(Default, Clone)]
@@ -104,6 +103,11 @@ impl Runner for AOC11 {
             let val = step(&mut map);
 
             sum += val;
+
+            /* for l in &map.data {
+                println!("{:2?}", l.iter().map(|e| e.value).collect::<Vec<u8>>());
+            }
+            println!(); */
         }
 
         sum
@@ -129,53 +133,43 @@ fn in_bounds(point: &Point, w: usize, h: usize) -> bool {
 }
 
 fn step(map: &mut Map) -> usize {
+    let mut flashed = Vec::new();
+    let mut flashes = 0;
+
     for y in 0..map.h {
         for x in 0..map.w {
-            let mut cell = map.get_cell_mut(Index(x, y));
+            let idx = Index(x, y);
+            let mut cell = map.get_cell_mut(idx);
 
             cell.value += 1;
-            cell.flashed = false;
-            cell.visited = false;
+
+            cell.flashed = if cell.value > 9 {
+                cell.value = 0;
+                flashed.push(idx);
+                true
+            } else {
+                false
+            };
         }
     }
 
-    let mut flashes = 0;
+    while flashed.len() != 0 {
+        flashes += 1;
+        let f = flashed.pop().unwrap();
 
-    let mut open: Vec<Index> = Vec::new();
+        for n in map.neighbours_pos(f.into()) {
+            let mut cell = map.get_cell_mut(n.into());
 
-    open.push(Index(0, 0));
-    while open.len() > 0 {
-        let idx = open.pop().unwrap();
-        let mut val = map.get_cell_mut(idx);
-        if val.visited {
-            continue;
-        }
-
-        val.visited = true;
-
-        if val.value > 9 && !val.flashed {
-            val.value = 0;
-            val.flashed = true;
-            flashes += 1;
-        }
-
-        if val.flashed {
-            for n_pos in map.neighbours_pos(idx.into()) {
-                let mut n = map.get_cell_mut(n_pos.into());
-
-                if !n.flashed {
-                    n.value += 1;
-                }
-
-                if n.value > 9 && !n.flashed {
-                    n.visited = false;
-                    open.push(n_pos.into());
-                }
+            if !cell.flashed {
+                cell.value += 1;
+                cell.flashed = if cell.value > 9 {
+                    cell.value = 0;
+                    flashed.push(n.into());
+                    true
+                } else {
+                    false
+                };
             }
-        }
-
-        for n_pos in map.neighbours_pos(idx.into()) {
-            open.push(n_pos.into());
         }
     }
 
