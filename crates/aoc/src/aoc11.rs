@@ -1,5 +1,4 @@
 use crate::runner::Runner;
-use std::collections::HashSet;
 use std::ops::Add;
 
 #[derive(Default)]
@@ -59,18 +58,6 @@ struct Map {
 }
 
 impl Map {
-    fn add_value(&mut self, index: Index, value: u8) {
-        self.data[index.1][index.0].value += value;
-    }
-    fn reset_value(&mut self, index: Index) {
-        self.data[index.1][index.0].value = 0;
-    }
-    fn get_value(&self, index: Index) -> u8 {
-        self.data[index.1][index.0].value
-    }
-    fn is_visited(&self, index: Index) -> bool {
-        self.data[index.1][index.0].visited
-    }
     fn get_cell_mut<'a>(&'a mut self, index: Index) -> &'a mut Cell {
         &mut self.data[index.1][index.0]
     }
@@ -78,17 +65,6 @@ impl Map {
         self.data.iter().fold(0usize, |acc1, c| {
             acc1 + c.iter().fold(0usize, |acc2, r| acc2 + r.value as usize)
         })
-    }
-    fn neighbours<'a>(&'a self, point: Point) -> Box<dyn Iterator<Item = Cell> + 'a> {
-        Box::new(
-            DIRS.iter()
-                .map(move |&e| point + e)
-                .filter(|e| in_bounds(e, self.w, self.h))
-                .map(|e| {
-                    let idx: Index = e.into();
-                    self.data[idx.1][idx.0]
-                }),
-        )
     }
     fn neighbours_pos<'a>(&self, point: Point) -> Box<dyn Iterator<Item = Point> + 'a> {
         let (w, h) = (self.w, self.h);
@@ -128,12 +104,6 @@ impl Runner for AOC11 {
             let val = step(&mut map);
 
             sum += val;
-            /* println!("{}: v{} - s{}", i, val, sum);
-
-            for l in &map.data {
-                println!("{:?}", l.iter().map(|e| e.value).collect::<Vec<u8>>());
-            }
-            println!(); */
         }
 
         sum
@@ -161,10 +131,11 @@ fn in_bounds(point: &Point, w: usize, h: usize) -> bool {
 fn step(map: &mut Map) -> usize {
     for y in 0..map.h {
         for x in 0..map.w {
-            map.add_value(Index(x, y), 1);
+            let mut cell = map.get_cell_mut(Index(x, y));
 
-            map.data[y][x].flashed = false;
-            map.data[y][x].visited = false;
+            cell.value += 1;
+            cell.flashed = false;
+            cell.visited = false;
         }
     }
 
