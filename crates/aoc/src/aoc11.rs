@@ -51,19 +51,17 @@ struct Cell {
 
 #[derive(Default, Clone)]
 struct Map {
-    data: Vec<Vec<Cell>>,
+    data: Vec<Cell>,
     w: usize,
     h: usize,
 }
 
 impl Map {
     fn get_cell_mut<'a>(&'a mut self, index: Index) -> &'a mut Cell {
-        &mut self.data[index.1][index.0]
+        &mut self.data[index.1 * self.w + index.0]
     }
     fn value_sum(&self) -> usize {
-        self.data.iter().fold(0usize, |acc1, c| {
-            acc1 + c.iter().fold(0usize, |acc2, r| acc2 + r.value as usize)
-        })
+        self.data.iter().map(|e| e.value as usize).sum()
     }
     fn neighbours_pos<'a>(&self, point: Point) -> Box<dyn Iterator<Item = Point> + 'a> {
         let (w, h) = (self.w, self.h);
@@ -77,21 +75,21 @@ impl Map {
 
 impl Runner for AOC11 {
     fn parse(&mut self, input: &std::vec::Vec<std::string::String>) {
-        let cells: Vec<Vec<Cell>> = input
+        let cells: Vec<Cell> = input
             .iter()
-            .map(|e| {
+            .flat_map(|e| {
                 e.chars()
                     .map(|c| Cell {
                         value: (c as u8 - 48),
                         ..Default::default()
                     })
-                    .collect()
+                    .collect::<Vec<Cell>>()
             })
             .collect();
 
         self.parsed = Map {
-            h: cells.len(),
-            w: cells[0].len(),
+            h: input.len(),
+            w: input[0].len(),
             data: cells,
         };
     }
@@ -136,35 +134,34 @@ fn step(map: &mut Map) -> usize {
     let mut flashed = Vec::new();
     let mut flashes = 0;
 
-    for y in 0..map.h {
-        for x in 0..map.w {
-            let idx = Index(x, y);
-            let mut cell = map.get_cell_mut(idx);
+    for i in 0..(map.w * map.h) {
+        let mut cell = &mut map.data[i];
 
-            cell.value += 1;
+        cell.value += 1;
 
-            cell.flashed = if cell.value > 9 {
-                cell.value = 0;
-                flashed.push(idx);
-                true
-            } else {
-                false
-            };
-        }
+        cell.flashed = if cell.value > 9 {
+            cell.value = 0;
+            flashed.push(i as isize);
+            true
+        } else {
+            false
+        };
     }
 
+    let w = map.w as isize;
     while flashed.len() != 0 {
         flashes += 1;
         let f = flashed.pop().unwrap();
 
-        for n in map.neighbours_pos(f.into()) {
+        let idx = Point(f % w, f / w);
+        for n in map.neighbours_pos(idx) {
             let mut cell = map.get_cell_mut(n.into());
 
             if !cell.flashed {
                 cell.value += 1;
                 cell.flashed = if cell.value > 9 {
                     cell.value = 0;
-                    flashed.push(n.into());
+                    flashed.push(n.1 * w + n.0);
                     true
                 } else {
                     false
