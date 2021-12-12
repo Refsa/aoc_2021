@@ -135,7 +135,7 @@ fn step(map: &mut Map) -> usize {
     let mut flashes = 0;
 
     for i in 0..(map.w * map.h) {
-        let mut cell = &mut map.data[i];
+        let cell = &mut map.data[i];
 
         cell.value += 1;
 
@@ -155,13 +155,14 @@ fn step(map: &mut Map) -> usize {
 
         let idx = Point(f % w, f / w);
         for n in map.neighbours_pos(idx) {
-            let mut cell = map.get_cell_mut(n.into());
+            let idx = n.1 * w + n.0;
+            let cell = &mut map.data[idx as usize];
 
             if !cell.flashed {
                 cell.value += 1;
                 cell.flashed = if cell.value > 9 {
                     cell.value = 0;
-                    flashed.push(n.1 * w + n.0);
+                    flashed.push(idx);
                     true
                 } else {
                     false
