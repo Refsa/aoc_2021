@@ -117,6 +117,7 @@ impl Grid {
             let (left, right) = self.data[j].split_at_mut(x);
             for i in 0..x {
                 left[i] += right[x - i];
+                // self.data[j][i] += self.data[j][self.width - i - 1];
             }
         }
         self.width = x;
@@ -124,12 +125,17 @@ impl Grid {
 
     fn fold_y(&mut self, y: usize) {
         let (upper_half, lower_half) = self.data.split_at_mut(y);
-
         for j in 0..y {
             for i in 0..self.width {
                 upper_half[j][i] += lower_half[y - j][i];
             }
         }
+
+        /* for j in 0..y {
+            for i in 0..self.width {
+                self.data[j][i] += self.data[self.height - j - 1][i];
+            }
+        } */
 
         self.height = y;
     }
