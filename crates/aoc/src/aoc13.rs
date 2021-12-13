@@ -22,12 +22,7 @@ struct Point {
 
 impl Runner for AOC13 {
     fn parse(&mut self, input: &Vec<String>) {
-        let empty_index = input
-            .iter()
-            .enumerate()
-            .find(|(i, e)| &e[..] == "")
-            .unwrap()
-            .0;
+        let empty_index = input.iter().position(|e| e == "").unwrap();
         let mut max_x = 0;
         let mut max_y = 0;
 
@@ -76,7 +71,13 @@ impl Runner for AOC13 {
 
         println!();
         for l in &grid.data[..grid.height] {
-            println!("{:?}", &l[..grid.width].iter().map(|&e| if e > 0 {'#'} else {'.'}).collect::<Vec<char>>());
+            println!(
+                "{:?}",
+                &l[..grid.width]
+                    .iter()
+                    .map(|&e| if e > 0 { '#' } else { '.' })
+                    .collect::<Vec<char>>()
+            );
         }
 
         0
@@ -134,17 +135,13 @@ impl Grid {
     }
 
     fn count_dots(&self) -> usize {
-        let mut sum = 0;
-        for y in 0..self.height {
-            for x in 0..self.width {
-                sum += if self.data[y][x] > 0 {
-                    1
-                } else {
-                    0
-                }
-            }
-        }
-
-        sum
+        self.data.iter().take(self.height).fold(0usize, |acc, e| {
+            let e_sum: usize = e
+                .iter()
+                .take(self.width)
+                .map(|&e| if e > 0 { 1 } else { 0 })
+                .sum();
+            acc + e_sum
+        })
     }
 }
