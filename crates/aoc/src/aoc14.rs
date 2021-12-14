@@ -2,104 +2,81 @@ use std::collections::HashMap;
 
 use crate::runner::Runner;
 
-#[derive(Debug, Default)]
-struct Pair {
-    left: [u8;2],
-    right: u8,
-}
+type Pattern = (u8, u8);
+type Element = u8;
+type PairCounter = HashMap<Pattern, usize>;
 
 #[derive(Default)]
 pub struct AOC14 {
-    template: Vec<u8>,
-    pair_lookup: HashMap<[u8;2], u8>
+    template: Vec<Element>,
+    pair_lookup: HashMap<Pattern, Element>,
 }
 
 impl Runner for AOC14 {
     fn parse(&mut self, input: &Vec<String>) {
         let template = input[0].clone().into_bytes();
-        let pairs: Vec<Pair> = input[2..]
+        let pairs: HashMap<Pattern, Element> = input[2..]
             .iter()
             .map(|e| {
                 let (l, r) = e.split_once(" -> ").unwrap();
                 let l = l.as_bytes();
-                let l = [l[0], l[1]];
-                Pair {
-                    left: l,
-                    right: r.bytes().nth(0).unwrap(),
-                }
+                let l = (l[0], l[1]);
+                let v = (l, r.bytes().nth(0).unwrap());
+                v
             })
             .collect();
 
-        let mut pair_lookup = HashMap::new();
-        for p in &pairs {
-            pair_lookup.insert(p.left.clone(), p.right);
-        }
-
-        self.pair_lookup = pair_lookup;
+        self.pair_lookup = pairs;
         self.template = template;
     }
 
     fn run_p1(&self) -> usize {
-        let mut seq = self.template.clone();
-        let mut inserts = Vec::new();
-
-        for _ in 0..10 {
-            step(&mut seq, &mut inserts, &self.pair_lookup);
-        }
-        
-        let mut counts = HashMap::new();
-        for s in seq {
-            let cnt = counts.entry(s).or_insert(0usize);
-            *cnt += 1;
-        }
-
-        let mut largest = 0;
-        let mut smallest = 1 << 32;
-        for (_, v) in counts {
-            largest = largest.max(v);
-            smallest = smallest.min(v);
-        }
-
-        largest - smallest
+        run(&self, 10)
     }
 
     fn run_p2(&self) -> usize {
-        let mut seq = self.template.clone();
-        let mut inserts = Vec::new();
-
-        for i in 0..40 {
-            println!("{}", i);
-            step(&mut seq, &mut inserts, &self.pair_lookup);
-        }
-        
-        let mut counts = HashMap::new();
-        for s in seq {
-            let cnt = counts.entry(s).or_insert(0usize);
-            *cnt += 1;
-        }
-
-        let mut largest = 0;
-        let mut smallest = 1 << 32;
-        for (_, v) in counts {
-            largest = largest.max(v);
-            smallest = smallest.min(v);
-        }
-
-        largest - smallest
+        run(&self, 40)
     }
 }
 
-fn step(seq: &mut Vec<u8>, inserts: &mut Vec<(usize, u8)>, pairs: &HashMap<[u8;2], u8>) {
-    /* for i in (0..(seq.len() - 1)).rev() {
-        let wnd = &seq[i..i+2];
-        let pair = pairs.get(wnd);
-        if let Some(pair) = pair {
-            inserts.push((i + 1, *pair))
-        }
-    } */
-
-    for (i, c) in inserts.iter() {
-        seq.insert(*i, *c);
+fn run(aoc: &AOC14, iter: usize) -> usize {
+    let mut map: PairCounter = HashMap::new();
+    for i in 0..aoc.template.len() - 1 {
+        let v = (aoc.template[i], aoc.template[i + 1]);
+        map.entry(v).and_modify(|e| *e += 1).or_insert(1);
     }
-    inserts.clear();
+
+    for _ in 0..iter {
+        map = step(&map, &aoc.pair_lookup);
+    }
+
+    let mut counts = HashMap::new();
+    for ((a, _), n) in map {
+        counts.entry(a).and_modify(|e| *e += n).or_insert(n);
+    }
+    *counts.get_mut(&aoc.template.last().unwrap()).unwrap() += 1;
+
+    let (min, max) = counts
+        .values()
+        .fold((usize::MAX, 0), |(min, max), &v| (min.min(v), max.max(v)));
+
+    (max + 1) - (min + 1)
+}
+
+fn step(
+    map: &PairCounter,
+    pairs: &HashMap<Pattern, Element>,
+) -> PairCounter {
+    let mut new_map = HashMap::new();
+
+    for (&(a, b), &n) in map {
+        if let Some(&c) = pairs.get(&(a, b)) {
+            let l = (a, c);
+            let r = (c, b);
+            new_map.entry(l).and_modify(|e| *e += n).or_insert(n);
+            new_map.entry(r).and_modify(|e| *e += n).or_insert(n);
+        }
+    }
+
+    new_map
 }
