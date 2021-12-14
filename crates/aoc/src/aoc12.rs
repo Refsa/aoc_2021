@@ -130,7 +130,14 @@ impl Runner for AOC12 {
     fn run_p2(&self) -> usize {
         let mut paths = Vec::new();
 
-        find_paths_p2(&self.graph, self.graph.entrance, 0, HashSet::new(), vec![], &mut paths);
+        find_paths_p2(
+            &self.graph,
+            self.graph.entrance,
+            0,
+            HashSet::new(),
+            vec![],
+            &mut paths,
+        );
 
         paths.len()
     }
