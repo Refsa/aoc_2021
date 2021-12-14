@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "Rust"
+name = "advent-of-code-2021"
 version = "0.1.0"
 dependencies = [
  "aoc",

@@ -1,6 +1,6 @@
 use aoc::aoc4::AOC4;
 use aoc::runner::Runner;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 
 mod get_input;
 

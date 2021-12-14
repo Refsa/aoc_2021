@@ -57,7 +57,7 @@ struct Map {
 }
 
 impl Map {
-    fn get_cell_mut<'a>(&'a mut self, index: Index) -> &'a mut Cell {
+    fn _get_cell_mut<'a>(&'a mut self, index: Index) -> &'a mut Cell {
         &mut self.data[index.1 * self.w + index.0]
     }
     fn value_sum(&self) -> usize {

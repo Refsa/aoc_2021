@@ -1,5 +1,4 @@
 use crate::runner::Runner;
-use std::ops::Range;
 
 #[derive(Default)]
 pub struct AOC5 {

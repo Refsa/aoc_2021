@@ -1,5 +1,5 @@
 [package]
-name = "Rust"
+name = "advent-of-code-2021"
 version = "0.1.0"
 edition = "2021"
 
@@ -61,4 +61,8 @@ harness = false
 
 [[bench]]
 name = "aoc13_bench"
+harness = false
+
+[[bench]]
+name = "aoc14_bench"
 harness = false

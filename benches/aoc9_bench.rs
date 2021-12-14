@@ -2,7 +2,7 @@ use criterion::measurement::WallTime;
 use std::time::Duration;
 use aoc::aoc9::AOC9;
 use aoc::runner::Runner;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 
 mod get_input;
 

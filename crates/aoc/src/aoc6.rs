@@ -20,7 +20,7 @@ impl Runner for AOC6 {
             buckets[*p as usize] += 1;
         }
 
-        for i in 0..80 {
+        for _ in 0..80 {
             let fst = buckets[0];
             buckets.rotate_left(1);
             buckets[6] += fst;
@@ -36,7 +36,7 @@ impl Runner for AOC6 {
             buckets[*p as usize] += 1;
         }
 
-        for i in 0..256 {
+        for _ in 0..256 {
             let fst = buckets[0];
             buckets.rotate_left(1);
             buckets[6] += fst;
