@@ -163,7 +163,7 @@ impl Runner for AOC15 {
         let (_path, tot_cost) = find_path(&flowfield, &self.map, &dirs, end);
 
         // draw_flowfield(&flowfield, &dirs, &path);
-        // plot::_plot_flowfield("./flowfield-p1.png", &flowfield, &dirs, &_path);
+        plot::_plot_flowfield("./assets/flowfield-p1.png", &flowfield, &dirs, &_path);
 
         tot_cost
     }
@@ -180,7 +180,7 @@ impl Runner for AOC15 {
         let (_path, tot_cost) = find_path(&flowfield, &map, &dirs, end);
 
         // draw_flowfield(&flowfield, &dirs, &path);
-        // plot::_plot_flowfield("./flowfield-p2.png", &flowfield, &dirs, &_path);
+        plot::_plot_flowfield("./assets/flowfield-p2.png", &flowfield, &dirs, &_path);
 
         tot_cost
     }
