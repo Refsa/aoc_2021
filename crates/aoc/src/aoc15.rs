@@ -9,7 +9,7 @@ use crate::runner::Runner;
 const DIRS: [Point; 4] = [Point(1, 0), Point(0, 1), Point(-1, 0), Point(0, -1)];
 
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
-struct Point(isize, isize);
+pub struct Point(pub isize, pub isize);
 
 impl Add for Point {
     type Output = Point;
@@ -43,10 +43,10 @@ impl Into<Point> for Index {
 }
 
 #[derive(Default, Clone)]
-struct Map {
+pub struct Map {
     data: Vec<isize>,
-    w: usize,
-    h: usize,
+    pub w: usize,
+    pub h: usize,
 }
 
 impl Map {
@@ -71,7 +71,7 @@ impl Map {
         self.w * point.1 as usize + point.0 as usize
     }
 
-    fn grow(&mut self) {
+    pub fn grow(&mut self) {
         let w = self.w * 5;
         let h = self.h * 5;
         let mut nmap = vec![vec![-1isize; w]; h];
@@ -83,13 +83,7 @@ impl Map {
                 let cp: Vec<Vec<isize>> = self
                     .data
                     .iter()
-                    .map(|e| {
-                        if e + risk_offset > 9 {
-                            (e + risk_offset) % 9
-                        } else {
-                            e + risk_offset
-                        }
-                    })
+                    .map(|e| (e + risk_offset - 1) % 9 + 1)
                     .map(|e| e.max(1))
                     .collect::<Vec<isize>>()
                     .chunks(self.w)
@@ -138,7 +132,7 @@ impl PartialOrd for Node {
 
 #[derive(Default)]
 pub struct AOC15 {
-    map: Map,
+    pub map: Map,
 }
 
 impl Runner for AOC15 {
@@ -158,21 +152,14 @@ impl Runner for AOC15 {
 
     fn run_p1(&self) -> usize {
         let end = Point(self.map.w as isize - 1, self.map.h as isize - 1);
-        let (flowfield, dirs) = generate_flowfield(&self.map, end);
+        let flowfield = generate_flowfield(&self.map, end);
+        let dirs = find_dirs(&flowfield);
 
-        let mut path = Vec::new();
-        let mut curr = Point(0, 0);
-        let mut tot_cost = -self.map.get_risk(&curr.into());
-        while curr != end {
-            path.push(curr);
-            tot_cost += self.map.get_risk(&curr.into());
-            curr = curr + dirs[flowfield.to_idx(curr)];
-        }
-        tot_cost += self.map.get_risk(&end.into());
+        let (_path, tot_cost) = find_path(&flowfield, &self.map, &dirs, end);
 
         // draw_flowfield(&flowfield, &dirs, &path);
 
-        tot_cost as usize
+        tot_cost
     }
 
     fn run_p2(&self) -> usize {
@@ -180,25 +167,55 @@ impl Runner for AOC15 {
         map.grow();
 
         let end = Point(map.w as isize - 1, map.h as isize - 1);
-        let (flowfield, dirs) = generate_flowfield(&map, end);
+        let flowfield = generate_flowfield(&map, end);
+        let dirs = find_dirs(&flowfield);
 
-        let mut path = Vec::new();
-        let mut curr = Point(0, 0);
-        let mut tot_cost = -map.get_risk(&curr.into());
-        while curr != end {
-            path.push(curr);
-            tot_cost += map.get_risk(&curr.into());
-            curr = curr + dirs[flowfield.to_idx(curr)];
-        }
-        tot_cost += map.get_risk(&end.into());
+        let (_path, tot_cost) = find_path(&flowfield, &map, &dirs, end);
 
         // draw_flowfield(&flowfield, &dirs, &path);
 
-        tot_cost as usize
+        tot_cost
     }
 }
 
-fn generate_flowfield(map: &Map, end: Point) -> (Map, Vec<Point>) {
+pub fn find_path(flowfield: &Map, map: &Map, dirs: &Vec<Point>, end: Point) -> (Vec<Point>, usize) {
+    let mut path = Vec::new();
+    let mut curr = Point(0, 0);
+    let mut tot_cost = -map.get_risk(&curr.into());
+    while curr != end {
+        path.push(curr);
+        tot_cost += map.get_risk(&curr.into());
+        curr = curr + dirs[flowfield.to_idx(curr)];
+    }
+    tot_cost += map.get_risk(&end.into());
+
+    (path, tot_cost as usize)
+}
+
+pub fn find_dirs(flowfield: &Map) -> Vec<Point> {
+    let mut dirs = Vec::new();
+    for y in 0..flowfield.h {
+        for x in 0..flowfield.w {
+            let point = Point(x as isize, y as isize);
+            let dir = flowfield
+                .neighbours_pos(point)
+                .fold((point, 1 << 32), |acc, e| {
+                    let risk = flowfield.get_risk(&e.into());
+
+                    if risk < acc.1 {
+                        (e, risk)
+                    } else {
+                        acc
+                    }
+                });
+
+            dirs.push(dir.0 - point);
+        }
+    }
+    dirs
+}
+
+pub fn generate_flowfield(map: &Map, end: Point) -> Map {
     let end = Node {
         point: end,
         tot_risk: 0,
@@ -228,30 +245,10 @@ fn generate_flowfield(map: &Map, end: Point) -> (Map, Vec<Point>) {
         }
     }
 
-    let mut dirs = Vec::new();
-    for y in 0..flowfield.h {
-        for x in 0..flowfield.w {
-            let point = Point(x as isize, y as isize);
-            let dir = flowfield
-                .neighbours_pos(point)
-                .fold((point, 1 << 32), |acc, e| {
-                    let risk = flowfield.get_risk(&e.into());
-
-                    if risk < acc.1 {
-                        (e, risk)
-                    } else {
-                        acc
-                    }
-                });
-
-            dirs.push(dir.0 - point);
-        }
-    }
-
-    (flowfield, dirs)
+    flowfield
 }
 
-fn draw_flowfield(flowfield: &Map, dirs: &Vec<Point>, path: &Vec<Point>) {
+fn _draw_flowfield(flowfield: &Map, dirs: &Vec<Point>, path: &Vec<Point>) {
     // E, S, W, N
     println!();
     for y in 0..flowfield.h as isize {
