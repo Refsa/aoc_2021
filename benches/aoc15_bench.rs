@@ -75,7 +75,7 @@ fn bench(c: &mut Criterion) {
         let dirs = find_dirs(&flowfield);
 
         a.iter(|| {
-            let (_path, _cost) = find_path(&flowfield, &map, &dirs, end);
+            let (_path, _cost) = find_path(&flowfield, &map, &dirs, Point(0, 0), end);
         });
     });
 }

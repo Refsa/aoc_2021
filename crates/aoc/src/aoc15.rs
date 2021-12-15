@@ -110,6 +110,10 @@ impl Map {
         self.h = h;
         self.data = nmap.iter().flatten().map(|&e| e).collect();
     }
+
+    fn in_bounds(&self, point: &Point) -> bool {
+        point.0 >= 0 && point.1 >= 0 && point.0 < self.w as isize && point.1 < self.h as isize
+    }
 }
 
 fn in_bounds(point: &Point, w: usize, h: usize) -> bool {
@@ -160,10 +164,10 @@ impl Runner for AOC15 {
         let mut dirs = find_dirs(&flowfield);
         dirs[flowfield.to_idx(end)] = Point(0, 0);
 
-        let (_path, tot_cost) = find_path(&flowfield, &self.map, &dirs, end);
+        let (_path, tot_cost) = find_path(&flowfield, &self.map, &dirs, Point(0, 0), end);
 
         // draw_flowfield(&flowfield, &dirs, &path);
-        plot::_plot_flowfield("./assets/flowfield-p1.png", &flowfield, &dirs, &_path);
+        // plot::_plot_flowfield("./assets/flowfield-p1.png", &flowfield, &dirs, &_path);
 
         tot_cost
     }
@@ -177,18 +181,29 @@ impl Runner for AOC15 {
         let mut dirs = find_dirs(&flowfield);
         dirs[flowfield.to_idx(end)] = Point(0, 0);
 
-        let (_path, tot_cost) = find_path(&flowfield, &map, &dirs, end);
+        let (_path, tot_cost) = find_path(&flowfield, &map, &dirs, Point(0, 0), end);
 
         // draw_flowfield(&flowfield, &dirs, &path);
-        plot::_plot_flowfield("./assets/flowfield-p2.png", &flowfield, &dirs, &_path);
+        // plot::_plot_flowfield("./assets/flowfield-p2.png", &flowfield, &dirs, &_path);
 
         tot_cost
     }
 }
 
-pub fn find_path(flowfield: &Map, map: &Map, dirs: &Vec<Point>, end: Point) -> (Vec<Point>, usize) {
+pub fn find_path(
+    flowfield: &Map,
+    map: &Map,
+    dirs: &Vec<Point>,
+    start: Point,
+    end: Point,
+) -> (Vec<Point>, usize) {
     let mut path = Vec::new();
-    let mut curr = Point(0, 0);
+
+    if !flowfield.in_bounds(&start) || !flowfield.in_bounds(&end) {
+        return (path, 0);
+    }
+
+    let mut curr = start;
     let mut tot_cost = -map.get_risk(&curr.into());
     while curr != end {
         path.push(curr);
@@ -224,6 +239,10 @@ pub fn find_dirs(flowfield: &Map) -> Vec<Point> {
 }
 
 pub fn generate_flowfield(map: &Map, end: Point) -> Map {
+    if !map.in_bounds(&end) {
+        panic!("out of bounds, but probably shouldnt panic");
+    }
+
     let end = Node {
         point: end,
         tot_risk: 0,
@@ -314,7 +333,7 @@ mod plot {
     use std::fs::File;
     use std::io::BufReader;
 
-    fn load_image<'a>(path: &str) -> Vec<Vec<RGBColor>> {
+    fn _load_image<'a>(path: &str) -> Vec<Vec<RGBColor>> {
         let image = image::load(
             BufReader::new(
                 File::open(path).map_err(|e| {
@@ -336,13 +355,12 @@ mod plot {
         colors
     }
 
-    fn draw_image(image: &Vec<Vec<RGBColor>>, area: &mut DrawingArea<BitMapBackend, Shift>) {
+    fn _draw_image(image: &Vec<Vec<RGBColor>>, area: &mut DrawingArea<BitMapBackend, Shift>) {
         // let (w, h) = area.dim_in_pixel();
         let (w, h) = (8, 8);
         for x in 0..w as usize {
             for y in 0..h as usize {
-                area.draw_pixel((x as i32, y as i32), &image[y][x])
-                    .unwrap();
+                area.draw_pixel((x as i32, y as i32), &image[y][x]).unwrap();
             }
         }
     }
@@ -359,14 +377,12 @@ mod plot {
             "./assets/path_up.png",
         ]
         .into_iter()
-        .map(|e| load_image(e))
+        .map(|e| _load_image(e))
         .collect();
 
-        let root_drawing_area = BitMapBackend::new(
-            output,
-            (flowfield.w as u32 * 8, flowfield.h as u32 * 8),
-        )
-        .into_drawing_area();
+        let root_drawing_area =
+            BitMapBackend::new(output, (flowfield.w as u32 * 8, flowfield.h as u32 * 8))
+                .into_drawing_area();
         root_drawing_area.fill(&WHITE).unwrap();
 
         let mut child_drawing_areas = root_drawing_area.split_evenly((flowfield.w, flowfield.h));
@@ -392,7 +408,7 @@ mod plot {
 
                 if let Some(arrow) = arrow {
                     let mut area = child_drawing_areas.get_mut(idx).unwrap();
-                    draw_image(&arrows[arrow], &mut area);
+                    _draw_image(&arrows[arrow], &mut area);
                 }
             }
         }

@@ -35,37 +35,39 @@ fn main() {
     let input = get_input(day);
     let test_data = get_test_data(day);
 
-    print!("Test P1 | ");
+    eprint!("Test P1 | ");
     runner.parse(&test_data.input);
     let test_answer = runner.run_p1();
     if test_answer != test_data.answer_p1 {
-        println!(
+        eprintln!(
             "Failed: expected {} - got answer {}",
             test_data.answer_p1, test_answer
         );
         return;
     }
-    println!("Success");
+    eprintln!("Success");
 
+    eprint!("Part 1  | ");
     runner.parse(&input);
     let p1 = runner.run_p1();
-    println!("Part 1  | {}", p1);
+    eprintln!("{}", p1);
 
-    print!("Test P2 | ");
+    eprint!("Test P2 | ");
     runner.parse(&test_data.input);
     let test_answer = runner.run_p2();
     if test_answer != test_data.answer_p2 {
-        println!(
+        eprintln!(
             "Failed: expected {} - got answer {}",
             test_data.answer_p2, test_answer
         );
         return;
     }
-    println!("Success");
+    eprintln!("Success");
 
+    eprint!("Part 2  | ");
     runner.parse(&input);
     let p2 = runner.run_p2();
-    println!("Part 2  | {}", p2);
+    eprintln!("{}", p2);
 }
 
 fn read_file(path: String) -> Result<Vec<String>, String> {
