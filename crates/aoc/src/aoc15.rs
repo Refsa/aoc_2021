@@ -1,14 +1,16 @@
 use colored::*;
 use std::{
-    collections::BinaryHeap,
+    cmp::Reverse,
+    collections::{BinaryHeap, HashMap, HashSet},
     ops::{Add, Sub},
 };
 
 use crate::runner::Runner;
 
 const DIRS: [Point; 4] = [Point(1, 0), Point(0, 1), Point(-1, 0), Point(0, -1)];
+type FindPathResult = (Vec<Point>, usize);
 
-#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, PartialOrd, Ord)]
 pub struct Point(pub isize, pub isize);
 
 impl Add for Point {
@@ -24,6 +26,17 @@ impl Sub for Point {
 
     fn sub(self, rhs: Self) -> Self::Output {
         Point(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+
+impl Point {
+    fn distance(&self, other: &Point) -> isize {
+        let diff = Point(self.0 - other.0, self.1 - other.1);
+        diff.0 * diff.0 + diff.1 * diff.1
+    }
+
+    fn sqr_mag(&self) -> isize {
+        self.0 * self.0 + self.1 * self.1
     }
 }
 
@@ -158,12 +171,19 @@ impl Runner for AOC15 {
     }
 
     fn run_p1(&self) -> usize {
+        /* return astar(
+            &self.map,
+            Point(0, 0),
+            Point(self.map.w as isize - 1, self.map.h as isize - 1),
+        )
+        .unwrap(); */
+
         let end = Point(self.map.w as isize - 1, self.map.h as isize - 1);
-        let flowfield = generate_flowfield(&self.map, end);
+        let flowfield = generate_flowfield(&self.map, end).unwrap();
         let mut dirs = find_dirs(&flowfield);
         dirs[flowfield.to_idx(end)] = Point(0, 0);
 
-        let (_path, tot_cost) = find_path(&flowfield, &self.map, &dirs, Point(0, 0), end);
+        let (_path, tot_cost) = find_path(&flowfield, &self.map, &dirs, Point(0, 0), end).unwrap();
 
         // draw_flowfield(&flowfield, &dirs, &path);
         // plot::_plot_flowfield("./assets/flowfield-p1.png", &flowfield, &dirs, &_path);
@@ -175,12 +195,19 @@ impl Runner for AOC15 {
         let mut map = self.map.clone();
         map.grow();
 
+        /* return astar(
+            &map,
+            Point(0, 0),
+            Point(map.w as isize - 1, map.h as isize - 1),
+        )
+        .unwrap(); */
+
         let end = Point(map.w as isize - 1, map.h as isize - 1);
-        let flowfield = generate_flowfield(&map, end);
+        let flowfield = generate_flowfield(&map, end).unwrap();
         let mut dirs = find_dirs(&flowfield);
         dirs[flowfield.to_idx(end)] = Point(0, 0);
 
-        let (_path, tot_cost) = find_path(&flowfield, &map, &dirs, Point(0, 0), end);
+        let (_path, tot_cost) = find_path(&flowfield, &map, &dirs, Point(0, 0), end).unwrap();
 
         // draw_flowfield(&flowfield, &dirs, &path);
         // plot::_plot_flowfield("./assets/flowfield-p2.png", &flowfield, &dirs, &_path);
@@ -195,11 +222,11 @@ pub fn find_path(
     dirs: &Vec<Point>,
     start: Point,
     end: Point,
-) -> (Vec<Point>, usize) {
+) -> Result<FindPathResult, String> {
     let mut path = Vec::new();
 
     if !flowfield.in_bounds(&start) || !flowfield.in_bounds(&end) {
-        return (path, 0);
+        return Err(format!("start and/or end point is outside of flowfield"));
     }
 
     let mut curr = start;
@@ -211,7 +238,7 @@ pub fn find_path(
     }
     tot_cost += map.get_risk(&end.into());
 
-    (path, tot_cost as usize)
+    Ok((path, tot_cost as usize))
 }
 
 pub fn find_dirs(flowfield: &Map) -> Vec<Point> {
@@ -237,9 +264,9 @@ pub fn find_dirs(flowfield: &Map) -> Vec<Point> {
     dirs
 }
 
-pub fn generate_flowfield(map: &Map, end: Point) -> Map {
+pub fn generate_flowfield(map: &Map, end: Point) -> Result<Map, String> {
     if !map.in_bounds(&end) {
-        panic!("out of bounds, but probably shouldnt panic");
+        return Err(format!("end point out of map bounds"));
     }
 
     let end = Node {
@@ -253,13 +280,15 @@ pub fn generate_flowfield(map: &Map, end: Point) -> Map {
         data: vec![1 << 32; map.data.len()],
     };
 
+    let end_idx = flowfield.to_idx(end.point);
+    flowfield.data[end_idx] = 0;
+
     let mut open: BinaryHeap<Node> = BinaryHeap::new();
-    *flowfield.data.last_mut().unwrap() = 0;
     open.push(end);
 
     while let Some(curr) = open.pop() {
         for n in map.neighbours_pos(curr.point) {
-            let n_risk = curr.tot_risk + map.get_risk(&n.into()); // + (curr.point.distance(&n) as isize);
+            let n_risk = curr.tot_risk + map.get_risk(&n.into());
 
             if n_risk < flowfield.get_risk(&n.into()) {
                 open.push(Node {
@@ -271,7 +300,47 @@ pub fn generate_flowfield(map: &Map, end: Point) -> Map {
         }
     }
 
-    flowfield
+    Ok(flowfield)
+}
+
+pub fn astar(map: &Map, start: Point, end: Point) -> Result<usize, String> {
+    let mut open: BinaryHeap<Node> = [Node {
+        point: start,
+        tot_risk: 0,
+    }]
+    .into();
+
+    let mut risks: HashMap<Point, (isize, isize)> = HashMap::new();
+    risks.insert(start, (0, 0));
+
+    while let Some(curr) = open.pop() {
+        if curr.point == end {
+            break;
+        }
+
+        for n in map.neighbours_pos(curr.point) {
+            if risks.contains_key(&n) {
+                continue;
+            }
+
+            let new_risk = risks[&curr.point].1 + map.get_risk(&n.into());
+            let h = new_risk + (n.distance(&curr.point) as isize);
+
+            let (c_h, c_r) = risks.entry(n).or_insert((1 << 32, 1 << 32));
+
+            if h < *c_h {
+                *c_h = h;
+                *c_r = new_risk;
+
+                open.push(Node {
+                    point: n,
+                    tot_risk: h,
+                });
+            }
+        }
+    }
+
+    Ok(risks[&end].1 as usize)
 }
 
 fn _draw_flowfield(flowfield: &Map, dirs: &Vec<Point>, path: &Vec<Point>) {

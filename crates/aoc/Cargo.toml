@@ -9,3 +9,4 @@ edition = "2021"
 colored = "2"
 plotters = { git = "https://github.com/38/plotters.git" }
 image = "*"
+keyed_priority_queue = "0.4.1"
