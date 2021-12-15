@@ -76,31 +76,30 @@ impl Map {
     }
 
     pub fn grow(&mut self) {
+        let mut grow_lookup = vec![self.data.clone()];
+        grow_lookup.extend((1..9).map(|i| {
+            self.data
+                .iter()
+                .map(|e| (e + i - 1) % 9 + 1)
+                .collect::<Vec<isize>>()
+        }));
+
         let w = self.w * 5;
         let h = self.h * 5;
-        let mut nmap = vec![vec![-1isize; w]; h];
-        let mut ros = Vec::new();
+        let mut nmap = vec![-1isize; w * h];
+
         for y in 0..5usize {
             for x in 0..5usize {
                 let risk_offset = ((x % 5) + (y % 5)) as isize;
-                ros.push(risk_offset);
-                let cp: Vec<Vec<isize>> = self
-                    .data
-                    .iter()
-                    .map(|e| (e + risk_offset - 1) % 9 + 1)
-                    .map(|e| e.max(1))
-                    .collect::<Vec<isize>>()
-                    .chunks(self.w)
-                    .into_iter()
-                    .map(|e| e.to_vec())
-                    .collect();
+                let cp = &grow_lookup[risk_offset as usize];
 
                 for yy in 0..self.h {
                     let idy = y * self.w + yy;
                     for xx in 0..self.w {
                         let idx = x * self.w + xx;
-                        let val = cp[yy][xx];
-                        nmap[idy][idx] = val;
+                        let val = cp[yy * self.w + xx];
+
+                        nmap[idy * w + idx] = val;
                     }
                 }
             }
@@ -108,7 +107,7 @@ impl Map {
 
         self.w = w;
         self.h = h;
-        self.data = nmap.iter().flatten().map(|&e| e).collect();
+        self.data = nmap;
     }
 
     fn in_bounds(&self, point: &Point) -> bool {

@@ -20,7 +20,7 @@ fn bench(c: &mut Criterion) {
         let mut solver = AOC15::default();
         solver.parse(&data);
         a.iter(|| {
-            solver.run_p1();
+            solver.run_p1()
         });
     });
 
@@ -28,7 +28,7 @@ fn bench(c: &mut Criterion) {
         let mut solver = AOC15::default();
         solver.parse(&data);
         a.iter(|| {
-            solver.run_p2();
+            solver.run_p2()
         });
     });
 
@@ -48,7 +48,7 @@ fn bench(c: &mut Criterion) {
         let end = Point(map.w as isize - 1, map.h as isize - 1);
 
         a.iter(|| {
-            let _flowfield = generate_flowfield(&map, end);
+            generate_flowfield(&map, end)
         });
     });
 
@@ -61,7 +61,7 @@ fn bench(c: &mut Criterion) {
         let flowfield = generate_flowfield(&map, end);
         
         a.iter(|| {
-            let _dirs = find_dirs(&flowfield);
+            find_dirs(&flowfield)
         });
     });
 
@@ -75,7 +75,7 @@ fn bench(c: &mut Criterion) {
         let dirs = find_dirs(&flowfield);
 
         a.iter(|| {
-            let (_path, _cost) = find_path(&flowfield, &map, &dirs, Point(0, 0), end);
+            find_path(&flowfield, &map, &dirs, Point(0, 0), end)
         });
     });
 }
