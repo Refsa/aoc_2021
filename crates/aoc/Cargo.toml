@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 colored = "2"
+plotters = { git = "https://github.com/38/plotters.git" }
+image = "*"

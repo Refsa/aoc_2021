@@ -71,6 +71,10 @@ impl Map {
         self.w * point.1 as usize + point.0 as usize
     }
 
+    fn to_point(&self, idx: usize) -> Point {
+        Point((idx / self.w) as isize, (idx % self.w) as isize)
+    }
+
     pub fn grow(&mut self) {
         let w = self.w * 5;
         let h = self.h * 5;
@@ -153,11 +157,13 @@ impl Runner for AOC15 {
     fn run_p1(&self) -> usize {
         let end = Point(self.map.w as isize - 1, self.map.h as isize - 1);
         let flowfield = generate_flowfield(&self.map, end);
-        let dirs = find_dirs(&flowfield);
+        let mut dirs = find_dirs(&flowfield);
+        dirs[flowfield.to_idx(end)] = Point(0, 0);
 
         let (_path, tot_cost) = find_path(&flowfield, &self.map, &dirs, end);
 
         // draw_flowfield(&flowfield, &dirs, &path);
+        // plot::_plot_flowfield("./flowfield-p1.png", &flowfield, &dirs, &_path);
 
         tot_cost
     }
@@ -168,11 +174,13 @@ impl Runner for AOC15 {
 
         let end = Point(map.w as isize - 1, map.h as isize - 1);
         let flowfield = generate_flowfield(&map, end);
-        let dirs = find_dirs(&flowfield);
+        let mut dirs = find_dirs(&flowfield);
+        dirs[flowfield.to_idx(end)] = Point(0, 0);
 
         let (_path, tot_cost) = find_path(&flowfield, &map, &dirs, end);
 
         // draw_flowfield(&flowfield, &dirs, &path);
+        // plot::_plot_flowfield("./flowfield-p2.png", &flowfield, &dirs, &_path);
 
         tot_cost
     }
@@ -295,4 +303,100 @@ fn _draw_flowfield(flowfield: &Map, dirs: &Vec<Point>, path: &Vec<Point>) {
         println!();
     }
     println!();
+}
+
+mod plot {
+    use super::*;
+    use image::imageops::FilterType;
+    use image::{GenericImageView, ImageFormat};
+    use plotters::coord::Shift;
+    use plotters::prelude::*;
+    use std::fs::File;
+    use std::io::BufReader;
+
+    fn load_image<'a>(path: &str) -> Vec<Vec<RGBColor>> {
+        let image = image::load(
+            BufReader::new(
+                File::open(path).map_err(|e| {
+                    eprintln!("Unable to open file plotters-doc-data.png, please make sure you have clone this repo with --recursive");
+                    e
+                }).unwrap()),
+            ImageFormat::Png,
+        ).unwrap()
+        .resize_exact(8, 8, FilterType::Nearest);
+
+        let mut colors = vec![vec![BLACK; 8]; 8];
+        for x in 0..8 {
+            for y in 0..8 {
+                let pixel = image.get_pixel(x, y).0;
+                colors[y as usize][x as usize] = RGBColor(pixel[0], pixel[1], pixel[2]);
+            }
+        }
+
+        colors
+    }
+
+    fn draw_image(image: &Vec<Vec<RGBColor>>, area: &mut DrawingArea<BitMapBackend, Shift>) {
+        // let (w, h) = area.dim_in_pixel();
+        let (w, h) = (8, 8);
+        for x in 0..w as usize {
+            for y in 0..h as usize {
+                area.draw_pixel((x as i32, y as i32), &image[y][x])
+                    .unwrap();
+            }
+        }
+    }
+
+    pub fn _plot_flowfield(output: &str, flowfield: &Map, dirs: &Vec<Point>, path: &Vec<Point>) {
+        let arrows: Vec<Vec<Vec<RGBColor>>> = [
+            "./assets/arrow_right.png",
+            "./assets/arrow_down.png",
+            "./assets/arrow_left.png",
+            "./assets/arrow_up.png",
+            "./assets/path_right.png",
+            "./assets/path_down.png",
+            "./assets/path_left.png",
+            "./assets/path_up.png",
+        ]
+        .into_iter()
+        .map(|e| load_image(e))
+        .collect();
+
+        let root_drawing_area = BitMapBackend::new(
+            output,
+            (flowfield.w as u32 * 8, flowfield.h as u32 * 8),
+        )
+        .into_drawing_area();
+        root_drawing_area.fill(&WHITE).unwrap();
+
+        let mut child_drawing_areas = root_drawing_area.split_evenly((flowfield.w, flowfield.h));
+
+        for y in 0..flowfield.h as isize {
+            for x in 0..flowfield.w as isize {
+                let idx = flowfield.to_idx(Point(x, y));
+                let dir = dirs[idx];
+                let in_path = path.contains(&Point(x, y));
+
+                let arrow = match DIRS.iter().position(|&v| v == dir).unwrap_or(4) {
+                    0 if in_path => Some(0 + 4),
+                    1 if in_path => Some(1 + 4),
+                    2 if in_path => Some(2 + 4),
+                    3 if in_path => Some(3 + 4),
+                    0 => Some(0),
+                    1 => Some(1),
+                    2 => Some(2),
+                    3 => Some(3),
+                    4 => None,
+                    _ => unreachable!(),
+                };
+
+                if let Some(arrow) = arrow {
+                    let mut area = child_drawing_areas.get_mut(idx).unwrap();
+                    draw_image(&arrows[arrow], &mut area);
+                }
+            }
+        }
+
+        root_drawing_area.present().expect("failed to create plot");
+    }
 }
