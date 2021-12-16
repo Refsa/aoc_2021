@@ -212,7 +212,9 @@ impl Runner for AOC16 {
     }
 
     fn run_p2(&self) -> usize {
-        todo!()
+        let mut parser = Parser::new(&self.string[..]);
+
+        solve_expression(&parser.read_packet(true)) as usize
     }
 }
 
@@ -232,6 +234,61 @@ fn sum_packet_versions(packet: &Packet) -> Number {
     }
 
     return sum;
+}
+
+//      96257984154
+// low  96257321569
+// high 154026627538
+fn solve_expression(packet: &Packet) -> Number {
+    // println!("{:?}", packet);
+
+    if let PacketType::Literal(val) = packet.content {
+        return val;
+    }
+
+    let sub_packets = match &packet.content {
+        PacketType::OperatorElevenBits(sp) => sp,
+        PacketType::OperatorFifteenBits(sp) => sp,
+        _ => unreachable!(),
+    };
+
+    let mut num = match packet.type_id {
+        1 => 1,
+        2 => 1 << 48,
+        _ => 0,
+    };
+
+    match packet.type_id {
+        0..=3 => {
+            for c in sub_packets.iter().map(|e| solve_expression(e)) {
+                match packet.type_id {
+                    0 => num += c,
+                    1 => num *= c,
+                    2 => num = num.min(c),
+                    3 => num = num.max(c),
+                    _ => unreachable!(),
+                }
+            }
+        }
+        5 => {
+            if solve_expression(&sub_packets[0]) > solve_expression(&sub_packets[1]) {
+                num = 1;
+            }
+        }
+        6 => {
+            if solve_expression(&sub_packets[0]) < solve_expression(&sub_packets[1]) {
+                num = 1;
+            }
+        }
+        7 => {
+            if solve_expression(&sub_packets[0]) == solve_expression(&sub_packets[1]) {
+                num = 1;
+            }
+        }
+        _ => unreachable!(),
+    }
+
+    num
 }
 
 mod tests {
