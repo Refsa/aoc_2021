@@ -197,7 +197,7 @@ mod tests {
         assert_eq!(30, map.to_1d(&p));
     }
 
-    #[test]
+    /* #[test]
     fn bresenham_points() {
         use super::*;
 
@@ -210,7 +210,7 @@ mod tests {
         let expected = vec![Point::new(3, 4), Point::new(2, 4), Point::new(1, 4)];
 
         assert_eq!(expected, points);
-    }
+    } */
 
     #[test]
     fn bresenham_points_rev() {

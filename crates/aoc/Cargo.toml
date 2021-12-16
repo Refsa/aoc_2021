@@ -10,3 +10,5 @@ colored = "2"
 plotters = { git = "https://github.com/38/plotters.git" }
 image = "*"
 keyed_priority_queue = "0.4.1"
+lazy_static = "*"
+bit-vec = "0.6.3"
