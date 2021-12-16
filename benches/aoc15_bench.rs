@@ -1,4 +1,4 @@
-use aoc::aoc15::{astar, find_dirs, find_path, generate_flowfield, Point, AOC15};
+use aoc::aoc15::{find_dirs, find_path, generate_flowfield, Point, AOC15};
 use aoc::runner::Runner;
 use criterion::measurement::WallTime;
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -26,21 +26,6 @@ fn bench(c: &mut Criterion) {
         let mut solver = AOC15::default();
         solver.parse(&data);
         a.iter(|| solver.run_p2());
-    });
-
-    c.bench_function("aoc15-2-astar", |a| {
-        let mut solver = AOC15::default();
-        solver.parse(&data);
-
-        a.iter(|| {
-            let mut map = solver.map.clone();
-            map.grow();
-            astar(
-                &map,
-                Point(0, 0),
-                Point((map.w - 1) as isize, (map.h - 1) as isize),
-            )
-        });
     });
 
     c.bench_function("aoc15-2-grow-map", |a| {
