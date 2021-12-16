@@ -51,29 +51,24 @@ struct Packet {
 }
 
 struct BitScanner<'a> {
-    bits: &'a [u8],
-    rest: &'a str,
+    rest: &'a [u8],
     pos: usize,
 }
 
 impl<'a> BitScanner<'a> {
-    fn new(from: &'a str, bits: &'a [u8]) -> Self {
-        Self {
-            rest: &from[..],
-            pos: 0,
-            bits: bits,
-        }
+    fn new(bits: &'a [u8]) -> Self {
+        Self { pos: 0, rest: bits }
     }
 
-    fn take(&mut self, cnt: usize) -> &'a str {
+    fn take(&mut self, cnt: usize) -> &'a [u8] {
         let part = &self.rest[..cnt];
         self.rest = &self.rest[cnt..];
         self.pos += cnt;
         part
     }
 
-    fn get_bit(&mut self, pos: usize) -> bool {
-        self.bits[pos] == 1
+    fn get_bit(&mut self, pos: usize) -> u8 {
+        self.rest[pos]
     }
 
     fn skip(&mut self, by: usize) {
@@ -87,9 +82,9 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn new(from: &'a str, bits: &'a [u8]) -> Self {
+    fn new(bits: &'a [u8]) -> Self {
         Self {
-            scanner: BitScanner::new(from, bits),
+            scanner: BitScanner::new(bits),
         }
     }
 
@@ -98,41 +93,47 @@ impl<'a> Parser<'a> {
         self.scanner.skip(octets - self.scanner.pos);
     }
 
+    fn bin_to_num(bits: &[u8], offset: usize) -> Number {
+        let mut num: Number = 0;
+
+        for i in 0..bits.len() {
+            num += (bits[bits.len() - i - 1] as Number) << ((i + offset) as Number);
+        }
+
+        num
+    }
+
     fn read_version(&mut self) -> Number {
-        Number::from_str_radix(self.scanner.take(3), 2).unwrap()
+        Self::bin_to_num(self.scanner.take(3), 0)
     }
 
     fn read_type_id(&mut self) -> Number {
-        Number::from_str_radix(self.scanner.take(3), 2).unwrap()
+        Self::bin_to_num(self.scanner.take(3), 0)
     }
 
     fn read_len_type_id(&mut self) -> Number {
-        Number::from_str_radix(self.scanner.take(1), 2).unwrap()
+        self.scanner.take(1)[0] as Number
     }
 
     fn read_literal(&mut self) -> Number {
-        let cpos = self.scanner.pos;
-        let mut epos = cpos;
+        let mut grps = 0;
         loop {
-            epos += 5;
-            if !self.scanner.get_bit(epos - 5) {
+            grps += 1;
+            if self.scanner.get_bit((grps - 1) * 5) == 0 {
                 break;
             }
         }
 
-        let len = epos - cpos;
-        let grps = len / 5;
-        let mut bin = "".to_string();
-        for _ in 0..grps {
-            bin = format!("{}{}", bin, &self.scanner.take(5)[1..]);
+        let mut num = 0;
+        for i in (0..grps).rev() {
+            let data = &self.scanner.take(5)[1..];
+            num += Self::bin_to_num(data, i * 4);
         }
-
-        Number::from_str_radix(&bin, 2).unwrap()
+        num
     }
 
     fn read_bits(&mut self, bits: usize) -> Number {
-        let num = self.scanner.take(bits);
-        Number::from_str_radix(num, 2).unwrap()
+        Self::bin_to_num(self.scanner.take(bits), 0)
     }
 
     fn read_packet(&mut self, skip: bool) -> Packet {
@@ -184,7 +185,6 @@ impl<'a> Parser<'a> {
 
 #[derive(Default)]
 pub struct AOC16 {
-    string: String,
     bits: Vec<u8>,
 }
 
@@ -195,20 +195,18 @@ impl Runner for AOC16 {
             .map(|e| HEX_TO_BIN[&e])
             .flatten()
             .collect::<Vec<u8>>();
-        let string = String::from_utf8(as_binary.iter().map(|e| e + 48).collect()).unwrap();
 
-        self.string = string;
         self.bits = as_binary;
     }
 
     fn run_p1(&self) -> usize {
-        let mut parser = Parser::new(&self.string[..], &self.bits);
+        let mut parser = Parser::new(&self.bits);
 
         sum_packet_versions(&parser.read_packet(true)) as usize
     }
 
     fn run_p2(&self) -> usize {
-        let mut parser = Parser::new(&self.string[..], &self.bits);
+        let mut parser = Parser::new(&self.bits);
 
         solve_expression(&parser.read_packet(true)) as usize
     }
@@ -247,7 +245,9 @@ fn solve_expression(packet: &Packet) -> Number {
             num = sub_packets
                 .iter()
                 .map(|e| solve_expression(e))
-                .fold(num, |acc, e| OPERATOR_LOOKUP[packet.type_id as usize](acc, e));
+                .fold(num, |acc, e| {
+                    OPERATOR_LOOKUP[packet.type_id as usize](acc, e)
+                });
         }
         5 => {
             if solve_expression(&sub_packets[0]) > solve_expression(&sub_packets[1]) {
@@ -281,11 +281,22 @@ mod tests {
     }
 
     #[test]
+    fn test_parser_bin_to_num() {
+        let num = [0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1];
+        assert_eq!(2021, Parser::bin_to_num(&num, 0));
+    }
+
+    #[test]
+    fn test_parser_bin_to_num_offset() {
+        let num = [1, 0, 1, 0];
+        assert_eq!(160, Parser::bin_to_num(&num, 4));
+    }
+
+    #[test]
     fn test_read_literal() {
         let aoc = _create_runner("D2FE28");
-        assert_eq!("110100101111111000101000".to_string(), aoc.string);
 
-        let mut parser = Parser::new(&aoc.string[..], &aoc.bits);
+        let mut parser = Parser::new(&aoc.bits);
 
         let version = parser.read_version();
         let type_id = parser.read_type_id();
@@ -299,14 +310,10 @@ mod tests {
     }
 
     #[test]
-    fn test_read_operator() {
+    fn test_read_operator_0() {
         let aoc = _create_runner("38006F45291200");
-        assert_eq!(
-            "00111000000000000110111101000101001010010001001000000000".to_string(),
-            aoc.string
-        );
 
-        let mut parser = Parser::new(&aoc.string[..], &aoc.bits);
+        let mut parser = Parser::new(&aoc.bits);
 
         let version = parser.read_version();
         let type_id = parser.read_type_id();
@@ -321,9 +328,27 @@ mod tests {
     }
 
     #[test]
+    fn test_read_operator_1() {
+        let aoc = _create_runner("EE00D40C823060");
+
+        let mut parser = Parser::new(&aoc.bits);
+
+        let version = parser.read_version();
+        let type_id = parser.read_type_id();
+        let len_type_id = parser.read_len_type_id();
+
+        assert_eq!(7, version);
+        assert_eq!(3, type_id);
+        assert_eq!(1, len_type_id);
+
+        let len = parser.read_bits(11);
+        assert_eq!(3, len);
+    }
+
+    #[test]
     fn test_read_literal_packet() {
         let aoc = _create_runner("D2FE28");
-        let mut parser = Parser::new(&aoc.string[..], &aoc.bits);
+        let mut parser = Parser::new(&aoc.bits);
         let packet = parser.read_packet(true);
 
         assert_eq!(6, packet.version);
@@ -342,7 +367,7 @@ mod tests {
     #[test]
     fn test_read_operator_fifteen_packet() {
         let aoc = _create_runner("38006F45291200");
-        let mut parser = Parser::new(&aoc.string[..], &aoc.bits);
+        let mut parser = Parser::new(&aoc.bits);
         let packet = parser.read_packet(true);
 
         assert_eq!(1, packet.version);
@@ -379,7 +404,7 @@ mod tests {
     #[test]
     fn test_read_operator_eleven_packet() {
         let aoc = _create_runner("EE00D40C823060");
-        let mut parser = Parser::new(&aoc.string[..], &aoc.bits);
+        let mut parser = Parser::new(&aoc.bits);
         let packet = parser.read_packet(true);
 
         assert_eq!(7, packet.version);
@@ -424,7 +449,7 @@ mod tests {
     #[test]
     fn test_calc_version_sum_1() {
         let aoc = _create_runner("8A004A801A8002F478");
-        let mut parser = Parser::new(&aoc.string[..], &aoc.bits);
+        let mut parser = Parser::new(&aoc.bits);
         let packet = parser.read_packet(true);
 
         let sum = sum_packet_versions(&packet);
@@ -435,7 +460,7 @@ mod tests {
     #[test]
     fn test_calc_version_sum_2() {
         let aoc = _create_runner("A0016C880162017C3686B18A3D4780");
-        let mut parser = Parser::new(&aoc.string[..], &aoc.bits);
+        let mut parser = Parser::new(&aoc.bits);
         let packet = parser.read_packet(true);
 
         let sum = sum_packet_versions(&packet);
