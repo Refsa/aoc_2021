@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::runner::Runner;
-use bit_vec::BitVec;
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -26,6 +25,14 @@ lazy_static! {
         ]
         .into()
     };
+    static ref OPERATOR_LOOKUP: Vec<fn(Number, Number) -> Number> = {
+        vec![
+            |num, c| num + c,
+            |num, c| num * c,
+            |num, c| num.min(c),
+            |num, c| num.max(c),
+        ]
+    };
 }
 
 type Number = u64;
@@ -33,8 +40,7 @@ type Number = u64;
 #[derive(Debug)]
 enum PacketType {
     Literal(Number),
-    OperatorFifteenBits(Vec<Box<Packet>>),
-    OperatorElevenBits(Vec<Box<Packet>>),
+    SubPackets(Vec<Box<Packet>>),
 }
 
 #[derive(Debug)]
@@ -46,7 +52,6 @@ struct Packet {
 
 struct BitScanner<'a> {
     bits: Vec<bool>,
-    total: &'a str,
     rest: &'a str,
     pos: usize,
 }
@@ -55,7 +60,6 @@ impl<'a> BitScanner<'a> {
     fn new(from: &'a str) -> Self {
         Self {
             rest: &from[..],
-            total: &from[..],
             pos: 0,
             bits: from
                 .chars()
@@ -69,11 +73,6 @@ impl<'a> BitScanner<'a> {
         self.rest = &self.rest[cnt..];
         self.pos += cnt;
         part
-    }
-
-    fn set_pos(&mut self, pos: usize) {
-        self.pos = pos;
-        self.rest = &self.total[pos..];
     }
 
     fn get_bit(&mut self, pos: usize) -> bool {
@@ -159,7 +158,7 @@ impl<'a> Parser<'a> {
                         while self.scanner.pos < epos {
                             sp.push(Box::new(self.read_packet(false)));
                         }
-                        PacketType::OperatorFifteenBits(sp)
+                        PacketType::SubPackets(sp)
                     }
                     1 => {
                         let len = self.read_bits(11);
@@ -167,7 +166,7 @@ impl<'a> Parser<'a> {
                         for _ in 0..len {
                             sp.push(Box::new(self.read_packet(false)));
                         }
-                        PacketType::OperatorElevenBits(sp)
+                        PacketType::SubPackets(sp)
                     }
                     _ => unreachable!(),
                 }
@@ -188,7 +187,6 @@ impl<'a> Parser<'a> {
 
 #[derive(Default)]
 pub struct AOC16 {
-    message: Vec<u8>,
     string: String,
 }
 
@@ -201,7 +199,6 @@ impl Runner for AOC16 {
             .collect::<Vec<u8>>();
         let string = String::from_utf8(as_binary.iter().map(|e| e + 48).collect()).unwrap();
 
-        self.message = as_binary;
         self.string = string;
     }
 
@@ -221,13 +218,7 @@ impl Runner for AOC16 {
 fn sum_packet_versions(packet: &Packet) -> Number {
     let mut sum = packet.version;
 
-    let sub_packets = match &packet.content {
-        PacketType::OperatorElevenBits(sp) => Some(sp),
-        PacketType::OperatorFifteenBits(sp) => Some(sp),
-        _ => None,
-    };
-
-    if let Some(sub_packets) = sub_packets {
+    if let PacketType::SubPackets(sub_packets) = &packet.content {
         for sp in sub_packets {
             sum += sum_packet_versions(sp);
         }
@@ -236,39 +227,28 @@ fn sum_packet_versions(packet: &Packet) -> Number {
     return sum;
 }
 
-//      96257984154
-// low  96257321569
-// high 154026627538
 fn solve_expression(packet: &Packet) -> Number {
-    // println!("{:?}", packet);
-
     if let PacketType::Literal(val) = packet.content {
         return val;
     }
 
     let sub_packets = match &packet.content {
-        PacketType::OperatorElevenBits(sp) => sp,
-        PacketType::OperatorFifteenBits(sp) => sp,
+        PacketType::SubPackets(sp) => sp,
         _ => unreachable!(),
     };
 
     let mut num = match packet.type_id {
         1 => 1,
-        2 => 1 << 48,
+        2 => Number::MAX,
         _ => 0,
     };
 
     match packet.type_id {
         0..=3 => {
-            for c in sub_packets.iter().map(|e| solve_expression(e)) {
-                match packet.type_id {
-                    0 => num += c,
-                    1 => num *= c,
-                    2 => num = num.min(c),
-                    3 => num = num.max(c),
-                    _ => unreachable!(),
-                }
-            }
+            num = sub_packets
+                .iter()
+                .map(|e| solve_expression(e))
+                .fold(num, |acc, e| OPERATOR_LOOKUP[packet.type_id as usize](acc, e));
         }
         5 => {
             if solve_expression(&sub_packets[0]) > solve_expression(&sub_packets[1]) {
@@ -294,7 +274,7 @@ fn solve_expression(packet: &Packet) -> Number {
 mod tests {
     use super::*;
 
-    fn create_runner(input: &str) -> AOC16 {
+    fn _create_runner(input: &str) -> AOC16 {
         let input = vec![input.to_string()];
         let mut aoc = AOC16::default();
         aoc.parse(&input);
@@ -303,7 +283,7 @@ mod tests {
 
     #[test]
     fn test_read_literal() {
-        let aoc = create_runner("D2FE28");
+        let aoc = _create_runner("D2FE28");
         assert_eq!("110100101111111000101000".to_string(), aoc.string);
 
         let mut parser = Parser::new(&aoc.string[..]);
@@ -321,7 +301,7 @@ mod tests {
 
     #[test]
     fn test_read_operator() {
-        let aoc = create_runner("38006F45291200");
+        let aoc = _create_runner("38006F45291200");
         assert_eq!(
             "00111000000000000110111101000101001010010001001000000000".to_string(),
             aoc.string
@@ -343,7 +323,7 @@ mod tests {
 
     #[test]
     fn test_read_literal_packet() {
-        let aoc = create_runner("D2FE28");
+        let aoc = _create_runner("D2FE28");
         let mut parser = Parser::new(&aoc.string[..]);
         let packet = parser.read_packet(true);
 
@@ -362,14 +342,14 @@ mod tests {
 
     #[test]
     fn test_read_operator_fifteen_packet() {
-        let aoc = create_runner("38006F45291200");
+        let aoc = _create_runner("38006F45291200");
         let mut parser = Parser::new(&aoc.string[..]);
         let packet = parser.read_packet(true);
 
         assert_eq!(1, packet.version);
         assert_eq!(6, packet.type_id);
 
-        let sub_packets = if let PacketType::OperatorFifteenBits(sb) = packet.content {
+        let sub_packets = if let PacketType::SubPackets(sb) = packet.content {
             Some(sb)
         } else {
             None
@@ -399,14 +379,14 @@ mod tests {
 
     #[test]
     fn test_read_operator_eleven_packet() {
-        let aoc = create_runner("EE00D40C823060");
+        let aoc = _create_runner("EE00D40C823060");
         let mut parser = Parser::new(&aoc.string[..]);
         let packet = parser.read_packet(true);
 
         assert_eq!(7, packet.version);
         assert_eq!(3, packet.type_id);
 
-        let sub_packets = if let PacketType::OperatorElevenBits(sb) = packet.content {
+        let sub_packets = if let PacketType::SubPackets(sb) = packet.content {
             Some(sb)
         } else {
             None
@@ -444,7 +424,7 @@ mod tests {
 
     #[test]
     fn test_calc_version_sum_1() {
-        let aoc = create_runner("8A004A801A8002F478");
+        let aoc = _create_runner("8A004A801A8002F478");
         let mut parser = Parser::new(&aoc.string[..]);
         let packet = parser.read_packet(true);
 
@@ -455,7 +435,7 @@ mod tests {
 
     #[test]
     fn test_calc_version_sum_2() {
-        let aoc = create_runner("A0016C880162017C3686B18A3D4780");
+        let aoc = _create_runner("A0016C880162017C3686B18A3D4780");
         let mut parser = Parser::new(&aoc.string[..]);
         let packet = parser.read_packet(true);
 
