@@ -18,6 +18,7 @@ fn get_runner(day: usize) -> Box<dyn Runner> {
         14 => Box::new(aoc::aoc14::AOC14::default()),
         15 => Box::new(aoc::aoc15::AOC15::default()),
         16 => Box::new(aoc::aoc16::AOC16::default()),
+        17 => Box::new(aoc::aoc17::AOC17::default()),
         _ => panic!("Runner for day {} not implemented", day),
     }
 }
