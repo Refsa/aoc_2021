@@ -1,6 +1,4 @@
-use std::{
-    ops::{Add, RangeInclusive, Sub},
-};
+use std::ops::{Add, RangeInclusive, Sub};
 
 use crate::runner::Runner;
 
@@ -34,22 +32,18 @@ impl Runner for AOC17 {
 
     fn run_p1(&self) -> usize {
         let target_area: TargetArea = (self.x_range.clone(), self.y_range.clone()).into();
+        /*
+        the maximum height we can go before the velocity when reaching y = 0
+        is equal to the lower y bounds of the target area
 
-        let (min_x, max_x) = find_vel_range_x(target_area.min_x, target_area.max_x);
-        let max_y = -target_area.min_y;
+        since "gravity" is 1 we can just do the triangle formula sum on the lower
+        y bounds of the target area minus one to find the maximum height.
+        using that formula works since we just subtract one from the veloicty each step
 
-        let mut max_h = 0;
-        for x in min_x..=max_x {
-            for y in 1..max_y {
-                let vel = Point(x, y);
-
-                if sim(vel, &target_area) {
-                    max_h = max_h.max(sum(y));
-                }
-            }
-        }
-
-        max_h as usize
+        the x velocity doesnt matter since we can just assume it's the lowest
+        amount for the x velocity to stop at the lower x bound of the target area
+        */
+        sum(-target_area.min_y - 1) as usize
     }
 
     fn run_p2(&self) -> usize {
@@ -99,7 +93,7 @@ fn sim(mut vel: Point, target: &TargetArea) -> bool {
         pos = pos + vel;
         vel.0 = vel.0 + -dir(vel.0);
         vel.1 = vel.1 - 1;
-        
+
         if target.contains(pos) {
             return true;
         }
