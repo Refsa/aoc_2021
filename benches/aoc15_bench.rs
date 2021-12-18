@@ -1,4 +1,4 @@
-use aoc::aoc15::{find_dirs, find_path, generate_flowfield, Point, AOC15};
+use aoc::aoc15::{find_path, generate_risks, Point, AOC15, generate_flowfield};
 use aoc::runner::Runner;
 use criterion::measurement::WallTime;
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -43,7 +43,7 @@ fn bench(c: &mut Criterion) {
         map.grow();
         let end = Point(map.w as isize - 1, map.h as isize - 1);
 
-        a.iter(|| generate_flowfield(&map, end));
+        a.iter(|| generate_risks(&map, end));
     });
 
     c.bench_function("aoc15-2-gen-dirs", |a| {
@@ -52,9 +52,9 @@ fn bench(c: &mut Criterion) {
         let mut map = solver.map.clone();
         map.grow();
         let end = Point(map.w as isize - 1, map.h as isize - 1);
-        let flowfield = generate_flowfield(&map, end).unwrap();
+        let flowfield = generate_risks(&map, end).unwrap();
 
-        a.iter(|| find_dirs(&flowfield));
+        a.iter(|| generate_flowfield(&flowfield));
     });
 
     c.bench_function("aoc15-2-find-path", |a| {
@@ -63,8 +63,8 @@ fn bench(c: &mut Criterion) {
         let mut map = solver.map.clone();
         map.grow();
         let end = Point(map.w as isize - 1, map.h as isize - 1);
-        let flowfield = generate_flowfield(&map, end).unwrap();
-        let dirs = find_dirs(&flowfield);
+        let flowfield = generate_risks(&map, end).unwrap();
+        let dirs = generate_flowfield(&flowfield);
 
         a.iter(|| find_path(&flowfield, &map, &dirs, Point(0, 0), end));
     });

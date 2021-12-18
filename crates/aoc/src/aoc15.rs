@@ -156,8 +156,8 @@ impl Runner for AOC15 {
 
     fn run_p1(&self) -> usize {
         let end = Point(self.map.w as isize - 1, self.map.h as isize - 1);
-        let flowfield = generate_flowfield(&self.map, end).unwrap();
-        let mut dirs = find_dirs(&flowfield);
+        let flowfield = generate_risks(&self.map, end).unwrap();
+        let mut dirs = generate_flowfield(&flowfield);
         dirs[flowfield.to_idx(end)] = Point(0, 0);
 
         let (_path, tot_cost) = find_path(&flowfield, &self.map, &dirs, Point(0, 0), end).unwrap();
@@ -173,8 +173,8 @@ impl Runner for AOC15 {
         map.grow();
 
         let end = Point(map.w as isize - 1, map.h as isize - 1);
-        let flowfield = generate_flowfield(&map, end).unwrap();
-        let mut dirs = find_dirs(&flowfield);
+        let flowfield = generate_risks(&map, end).unwrap();
+        let mut dirs = generate_flowfield(&flowfield);
         dirs[flowfield.to_idx(end)] = Point(0, 0);
 
         let (_path, tot_cost) = find_path(&flowfield, &map, &dirs, Point(0, 0), end).unwrap();
@@ -186,7 +186,7 @@ impl Runner for AOC15 {
     }
 }
 
-pub fn generate_flowfield(map: &Map, end: Point) -> Result<Map, String> {
+pub fn generate_risks(map: &Map, end: Point) -> Result<Map, String> {
     if !map.in_bounds(&end) {
         return Err(format!("end point out of map bounds"));
     }
@@ -225,7 +225,7 @@ pub fn generate_flowfield(map: &Map, end: Point) -> Result<Map, String> {
     Ok(flowfield)
 }
 
-pub fn find_dirs(flowfield: &Map) -> Vec<Point> {
+pub fn generate_flowfield(flowfield: &Map) -> Vec<Point> {
     let mut dirs = Vec::new();
     for y in 0..flowfield.h {
         for x in 0..flowfield.w {

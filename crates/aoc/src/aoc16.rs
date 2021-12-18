@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, iter::Map, slice::Iter};
 
 use crate::runner::Runner;
 use lazy_static::lazy_static;
@@ -24,14 +24,6 @@ lazy_static! {
             ('F' as u8, [1, 1, 1, 1]),
         ]
         .into()
-    };
-    static ref OPERATOR_LOOKUP: Vec<fn(Number, Number) -> Number> = {
-        vec![
-            |num, c| num + c,
-            |num, c| num * c,
-            |num, c| num.min(c),
-            |num, c| num.max(c),
-        ]
     };
 }
 
@@ -94,12 +86,10 @@ impl<'a> Parser<'a> {
     }
 
     fn bin_to_num(bits: &[u8], offset: usize) -> Number {
-        let mut num: Number = 0;
-
+        let mut num = 0;
         for i in 0..bits.len() {
             num += (bits[bits.len() - i - 1] as Number) << ((i + offset) as Number);
         }
-
         num
     }
 
@@ -116,20 +106,14 @@ impl<'a> Parser<'a> {
     }
 
     fn read_literal(&mut self) -> Number {
-        let mut grps = 0;
-        loop {
+        let mut grps = 1;
+        while self.scanner.get_bit((grps - 1) * 5) != 0 {
             grps += 1;
-            if self.scanner.get_bit((grps - 1) * 5) == 0 {
-                break;
-            }
         }
 
-        let mut num = 0;
-        for i in (0..grps).rev() {
-            let data = &self.scanner.take(5)[1..];
-            num += Self::bin_to_num(data, i * 4);
-        }
-        num
+        (0..grps).rev().fold(0, |acc, i| {
+            acc + Self::bin_to_num(&self.scanner.take(5)[1..], i * 4)
+        })
     }
 
     fn read_bits(&mut self, bits: usize) -> Number {
@@ -145,30 +129,24 @@ impl<'a> Parser<'a> {
                 let val = self.read_literal();
                 PacketType::Literal(val)
             }
-            _ => {
-                let len_type_id = self.read_len_type_id();
-                match len_type_id {
-                    0 => {
-                        let len = self.read_bits(15) as usize;
-                        let epos = self.scanner.pos + len - 1;
-                        let mut sp = Vec::new();
-
-                        while self.scanner.pos < epos {
-                            sp.push(self.read_packet(false));
-                        }
-                        PacketType::SubPackets(sp)
+            _ => match self.read_len_type_id() {
+                0 => {
+                    let len = self.read_bits(15) as usize;
+                    let epos = self.scanner.pos + len - 1;
+                    
+                    let mut sp = Vec::new();
+                    while self.scanner.pos < epos {
+                        sp.push(self.read_packet(false));
                     }
-                    1 => {
-                        let len = self.read_bits(11);
-                        let mut sp = Vec::new();
-                        for _ in 0..len {
-                            sp.push(self.read_packet(false));
-                        }
-                        PacketType::SubPackets(sp)
-                    }
-                    _ => unreachable!(),
+                    PacketType::SubPackets(sp)
                 }
-            }
+                1 => PacketType::SubPackets(
+                    (0..self.read_bits(11))
+                        .map(|_| self.read_packet(false))
+                        .collect(),
+                ),
+                _ => unreachable!(),
+            },
         };
 
         if skip {
@@ -224,6 +202,8 @@ fn sum_packet_versions(packet: &Packet) -> Number {
     return sum;
 }
 
+type IterType<'a> = Map<Iter<'a, Packet>, fn(&'a Packet) -> u64>;
+
 fn solve_expression(packet: &Packet) -> Number {
     if let PacketType::Literal(val) = packet.content {
         return val;
@@ -234,40 +214,36 @@ fn solve_expression(packet: &Packet) -> Number {
         _ => unreachable!(),
     };
 
-    let mut num = match packet.type_id {
-        1 => 1,
-        2 => Number::MAX,
-        _ => 0,
+    let op = match packet.type_id {
+        0 => |iter: IterType| iter.sum(),
+        1 => |iter: IterType| iter.product(),
+        2 => |iter: IterType| iter.min().unwrap(),
+        3 => |iter: IterType| iter.max().unwrap(),
+        5 => |mut iter: IterType| {
+            if iter.next().unwrap() > iter.next().unwrap() {
+                1
+            } else {
+                0
+            }
+        },
+        6 => |mut iter: IterType| {
+            if iter.next().unwrap() < iter.next().unwrap() {
+                1
+            } else {
+                0
+            }
+        },
+        7 => |mut iter: IterType| {
+            if iter.next().unwrap() == iter.next().unwrap() {
+                1
+            } else {
+                0
+            }
+        },
+        _ => unreachable!(),
     };
 
-    match packet.type_id {
-        0..=3 => {
-            num = sub_packets
-                .iter()
-                .map(|e| solve_expression(e))
-                .fold(num, |acc, e| {
-                    OPERATOR_LOOKUP[packet.type_id as usize](acc, e)
-                });
-        }
-        5 => {
-            if solve_expression(&sub_packets[0]) > solve_expression(&sub_packets[1]) {
-                num = 1;
-            }
-        }
-        6 => {
-            if solve_expression(&sub_packets[0]) < solve_expression(&sub_packets[1]) {
-                num = 1;
-            }
-        }
-        7 => {
-            if solve_expression(&sub_packets[0]) == solve_expression(&sub_packets[1]) {
-                num = 1;
-            }
-        }
-        _ => unreachable!(),
-    }
-
-    num
+    op(sub_packets.iter().map(solve_expression))
 }
 
 mod tests {
