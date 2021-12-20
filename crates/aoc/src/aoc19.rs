@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt::Write,
-    ops::Sub,
+    ops::{Add, Sub},
 };
 
 use crate::runner::Runner;
@@ -49,26 +49,117 @@ impl Runner for AOC19 {
 
     fn run_p1(&self) -> usize {
         println!();
-        /*
-        --- scanner 0 ---
-        0,2 -> -5, 0 = 5,2
-        4,1 -> -1,-1 = 5,2
-        3,3 -> -2,-1 = 5,2
 
-        --- scanner 1 ---
-        -1,-1 -> 4,1
-        -5, 0 -> 0,2
-        -2, 1 -> 3,3
-        */
         let mut scanners = self.scanners.clone();
 
-        let mut already_found: HashSet<usize> = HashSet::new();
-        let mut matches = HashMap::new();
+        let mut flips = HashMap::new();
+        let mut offsets = HashMap::new();
 
-        for i in 0..scanners.len() {
+        let mapped = map_scanners(&scanners[0], &scanners[1]);
+        let found = mapped.into_iter().find(|(_k, v)| v.len() >= 12);
+        if let Some(found) = found {
+            println!("flip 1: {:?}", found.0);
+            let flip_idx = found.1[0].flip;
+
+            flips.insert(1, flip_idx);
+            offsets.insert(1, found.0);
+            
+            for p in scanners[1].beacons.iter_mut() {
+                p.flip_self(flip_idx);
+                p.add_self(found.0);
+            }
+        }
+
+        let mapped = map_scanners(&scanners[1], &scanners[4]);
+        let found = mapped.into_iter().find(|(_k, v)| v.len() >= 12);
+        if let Some(found) = found {
+            println!("flip 4: {:?}", found.0);
+            let flip_idx = found.1[0].flip;
+
+            flips.insert(4, flip_idx);
+            offsets.insert(4, found.0);
+
+            for p in scanners[4].beacons.iter_mut() {
+                p.flip_self(flip_idx);
+                p.add_self(found.0);
+            }
+        }
+
+        let mapped = map_scanners(&scanners[1], &scanners[3]);
+        let found = mapped.into_iter().find(|(_k, v)| v.len() >= 12);
+        if let Some(found) = found {
+            println!("flip 3: {:?}", found.0);
+            let flip_idx = found.1[0].flip;
+
+            flips.insert(3, flip_idx);
+            offsets.insert(3, found.0);
+
+            for p in scanners[3].beacons.iter_mut() {
+                p.flip_self(flip_idx);
+                p.add_self(found.0);
+            }
+        }
+
+        let mapped = map_scanners(&self.scanners[4], &scanners[2]);
+        let found = mapped.into_iter().find(|(_k, v)| v.len() >= 12);
+        if let Some(found) = found {
+            println!("flip 2: {:?}", found.0);
+
+            let flip_idx = found.1[0].flip;
+            flips.insert(2, flip_idx);
+            
+            let offset = offsets[&4];
+            offsets.insert(2, offset);
+
+            for p in scanners[2].beacons.iter_mut() {
+                p.flip_self(flip_idx);
+                p.flip_self(flips[&4]);
+                p.add_self(offset + found.0);
+            }
+        }
+
+        let beacons: HashSet<Point> = scanners.into_iter().flat_map(|e| e.beacons).collect();
+        println!("{}", beacons.len());
+
+        return 0;
+
+        let mut matches = HashMap::new();
+        let mut seen: HashSet<usize> = vec![0].into_iter().collect();
+        let mut current = 0;
+
+        loop {
+            if seen.len() == scanners.len() {
+                break;
+            }
+
+            for i in 0..scanners.len() {
+                if seen.contains(&i) {
+                    continue;
+                }
+
+                let mapped = map_scanners(&scanners[current], &scanners[i]);
+                let found = mapped.into_iter().find(|(_k, v)| v.len() >= 12);
+                if let Some(found) = found {
+                    let flip_idx = found.1[0].flip;
+                    println!("{}, {} | {} | {:?}", current, i, flip_idx, found.1[0].offset);
+                    
+                    for p in scanners[i].beacons.iter_mut() {
+                        p.flip_self(flip_idx);
+                        p.add_self(found.0);
+                    }
+                    
+                    seen.insert(i);
+                    matches.insert((current, i), found);
+                    current = i;
+                    break;
+                }
+            }
+        }
+
+        /* for i in 0..scanners.len() {
             let a = &scanners[i];
             for j in 0..scanners.len() {
-                if i == j || already_found.contains(&j) {
+                if i == j || matches.contains_key(&(j, i)) {
                     continue;
                 }
                 let b = &scanners[j];
@@ -78,21 +169,20 @@ impl Runner for AOC19 {
 
                 if let Some(found) = found {
                     let flip_idx = found.1[0].flip;
-                    println!("{}, {} | {}", i, j, flip_idx);
-                    
+                    println!("{}, {} | {} | {:?}", i, j, flip_idx, found.1[0].offset);
+
                     for p in scanners[j].beacons.iter_mut() {
                         p.flip_self(flip_idx);
+                        p.add_self(found.0);
                     }
 
                     matches.insert((i, j), found);
-                    already_found.insert(i);
                     break;
                 }
             }
-        }
+        } */
 
         let beacons: HashSet<Point> = scanners.into_iter().flat_map(|e| e.beacons).collect();
-
         beacons.len()
     }
 
@@ -110,7 +200,7 @@ fn map_scanners(a: &Scanner, b: &Scanner) -> HashMap<Point, Vec<Match>> {
             let b2 = b.beacons[idx2];
             for (i, &b2) in b2.get_flips().iter().enumerate() {
                 let p = b1 - b2;
-                let m = Match::new(idx1, idx2, i);
+                let m = Match::new(idx1, idx2, p, i);
                 let counter = counters
                     .entry(p)
                     .and_modify(|e| e.push(m))
@@ -129,14 +219,16 @@ fn map_scanners(a: &Scanner, b: &Scanner) -> HashMap<Point, Vec<Match>> {
 struct Match {
     a: usize,
     b: usize,
+    offset: Point,
     flip: usize,
 }
 
 impl Match {
-    fn new(a: usize, b: usize, flip: usize) -> Match {
+    fn new(a: usize, b: usize, offset: Point, flip: usize) -> Match {
         Match {
             a: a,
             b: b,
+            offset: offset,
             flip: flip,
         }
     }
@@ -161,6 +253,20 @@ impl std::fmt::Debug for Point {
 impl Point {
     fn new(x: isize, y: isize, z: isize) -> Point {
         Point { x: x, y: y, z: z }
+    }
+
+    fn add_self(&mut self, point: Point) {
+        let p = *self + point;
+        self.x = p.x;
+        self.y = p.y;
+        self.z = p.z;
+    }
+
+    fn sub_self(&mut self, point: Point) {
+        let p = *self - point;
+        self.x = p.x;
+        self.y = p.y;
+        self.z = p.z;
     }
 
     fn get_flips(&self) -> [Point; 24] {
@@ -240,6 +346,18 @@ impl Sub for Point {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
             z: self.z - rhs.z,
+        }
+    }
+}
+
+impl Add for Point {
+    type Output = Point;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Point {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
         }
     }
 }
