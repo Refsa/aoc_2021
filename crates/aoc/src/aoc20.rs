@@ -23,62 +23,50 @@ impl Runner for AOC20 {
     }
 
     fn run_p1(&self) -> usize {
-        println!();
-
-        let mut img = Image {
+        let img = Image {
             width: self.width,
             height: self.height,
             data: self.image.clone(),
         };
 
-        let growth = Index(8, 8);
-        img.grow(growth);
-        for _ in 0..2 {
-            img = filter_image(&img, &self.lookup);
-        }
-        img.resize(Index(self.width + 4, self.height + 4));
-
-        // img.draw();
-        img.count_lit()
+        run(img, &self.lookup, Index(self.width, self.height), 2)
     }
 
     fn run_p2(&self) -> usize {
-        let mut img = Image {
+        let img = Image {
             width: self.width,
             height: self.height,
             data: self.image.clone(),
         };
 
-        let growth = Index(4 * 50, 4 * 50);
-        img.grow(growth);
-        for _ in 0..50 {
-            img = filter_image(&img, &self.lookup);
-        }
-        img.resize(Index(self.width + 2 * 50, self.height + 2 * 50));
-
-        // img.draw();
-        img.count_lit()
+        run(img, &self.lookup, Index(self.width, self.height), 50)
     }
 }
 
-fn filter_image(img: &Image, filter: &Vec<u8>) -> Image {
-    let mut new_img = Image {
-        width: img.width,
-        height: img.height,
-        data: vec![vec![0u8; img.width]; img.height],
-    };
+fn run(mut img: Image, filter: &Vec<u8>, size: Index, iters: usize) -> usize {
+    img.grow(Index(iters * 4, iters * 4));
+    let mut img2 = img.clone();
 
-    for y in 1..img.height - 1 {
-        for x in 1..img.width - 1 {
-            let conv = img.conv(Point(x as isize, y as isize));
+    for _ in 0..iters {
+        filter_image2(&img, &mut img2, &filter);
+        (img, img2) = (img2, img);
+    }
+
+    img.resize(Index(size.0 + iters * 2, size.1 + iters * 2));
+    img.count_lit()
+}
+
+fn filter_image2(src: &Image, dst: &mut Image, filter: &Vec<u8>) {
+    for y in 1..src.height - 1 {
+        for x in 1..src.width - 1 {
+            let conv = src.conv(Point(x as isize, y as isize));
             let pix = filter[conv];
-            new_img.set_pixel(Index(x, y), pix);
+            dst.set_pixel(Index(x, y), pix);
         }
     }
-
-    new_img
 }
 
+#[derive(Clone)]
 struct Image {
     width: usize,
     height: usize,
@@ -86,21 +74,21 @@ struct Image {
 }
 
 impl Image {
-    fn draw(&self) {
+    fn _draw(&self) {
         for y in 0..self.height {
             for x in 0..self.width {
-                print!("{}", bit_to_pixel(&self.get_pixel(Index(x, y))));
+                print!("{}", _bit_to_pixel(&self.get_pixel(Index(x, y))));
             }
 
             println!();
         }
     }
 
-    fn draw_conv(&self, point: Point) {
+    fn _draw_conv(&self, point: Point) {
         for y in -1..=1 {
             for x in -1..=1 {
                 let p = point + Point(x, y);
-                print!("{}", bit_to_pixel(&self.get_pixel(p.into())));
+                print!("{}", _bit_to_pixel(&self.get_pixel(p.into())));
             }
             println!();
         }
@@ -181,9 +169,9 @@ fn pixel_to_bit(pixel: char) -> u8 {
     }
 }
 
-fn bit_to_pixel(bit: &u8) -> char {
+fn _bit_to_pixel(bit: &u8) -> char {
     match bit {
-        0 => ' ',
+        0 => '-',
         1 => '█',
         _ => unreachable!(),
     }

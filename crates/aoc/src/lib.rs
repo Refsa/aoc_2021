@@ -1,3 +1,5 @@
+#![feature(destructuring_assignment)]
+
 pub mod runner;
 
 pub mod aoc1;
