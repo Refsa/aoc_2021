@@ -34,11 +34,12 @@ impl Runner for AOC21 {
 }
 
 const _BELL: [u128; 7] = [1, 3, 6, 7, 6, 3, 1];
+type LookupKey = [u16; 4];
 
 fn sim_board(
     mut board: QuantumBoard,
     roll: u16,
-    lookup: &mut HashMap<[u16; 5], [usize; 2]>,
+    lookup: &mut HashMap<LookupKey, [usize; 2]>,
 ) -> [usize; 2] {
     if roll > 0 {
         if let Some(turn) = board.do_roll(roll) {
@@ -54,27 +55,21 @@ fn sim_board(
         return state.clone();
     }
 
-    let mut scores = Vec::new();
-    scores.push(sim_board(board.clone(), 3, lookup));
-    scores.push(sim_board(board.clone(), 9, lookup));
-
-    for _ in 0..3 {
-        scores.push(sim_board(board.clone(), 4, lookup));
-        scores.push(sim_board(board.clone(), 8, lookup));
-    }
-
-    for _ in 0..6 {
-        scores.push(sim_board(board.clone(), 5, lookup));
-        scores.push(sim_board(board.clone(), 7, lookup));
-    }
-
-    for _ in 0..7 {
-        scores.push(sim_board(board.clone(), 6, lookup));
-    }
-
-    let score = scores
-        .iter()
-        .fold([0, 0], |acc, e| [acc[0] + e[0], acc[1] + e[1]]);
+    let score = vec![
+        (sim_board(board.clone(), 3, lookup), 1),
+        (sim_board(board.clone(), 9, lookup), 1),
+        (sim_board(board.clone(), 4, lookup), 3),
+        (sim_board(board.clone(), 8, lookup), 3),
+        (sim_board(board.clone(), 5, lookup), 6),
+        (sim_board(board.clone(), 7, lookup), 6),
+        (sim_board(board.clone(), 6, lookup), 7),
+    ]
+    .into_iter()
+    .fold([0, 0], |mut acc, (e, i)| {
+        acc[0] += e[0] * i;
+        acc[1] += e[1] * i;
+        acc
+    });
 
     lookup.insert(board.key(), score);
 
@@ -114,11 +109,10 @@ impl QuantumBoard {
         p.1 >= 21
     }
 
-    fn key(&self) -> [u16; 5] {
+    fn key(&self) -> LookupKey {
         [
             self.turn as u16,
-            self.players[0].0,
-            self.players[1].0,
+            self.players[0].0 * 10 + self.players[1].0,
             self.players[0].1,
             self.players[1].1,
         ]
