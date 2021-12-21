@@ -82,3 +82,7 @@ harness = false
 [[bench]]
 name = "aoc20_bench"
 harness = false
+
+[[bench]]
+name = "aoc21_bench"
+harness = false
