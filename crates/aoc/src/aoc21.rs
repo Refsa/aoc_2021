@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::runner::Runner;
 
 #[derive(Default)]
@@ -30,48 +32,58 @@ impl Runner for AOC21 {
     }
 
     fn run_p2(&self) -> usize {
-        let mut steps = 0;
-
+        let mut lookup = HashMap::new();
         let board = Board::new(self.p1_start, self.p2_start, 21, None);
 
-        let sum = sim_board(board, 0, &mut steps);
+        let sum = sim_board(board, 0, &mut lookup);
         println!("{}, {}", sum[0], sum[1]);
-        sum[0].max(sum[1])
+        sum[0].max(sum[1]) as usize
     }
 }
 
-const BELL: [usize; 7] = [1, 3, 6, 7, 6, 3, 1];
+const BELL: [u128; 7] = [1, 3, 6, 7, 6, 3, 1];
 
-fn sim_board(mut board: Board, roll: u16, steps: &mut usize) -> [usize; 2] {
+fn sim_board(mut board: Board, roll: u16, lookup: &mut HashMap<[u16; 5], [u128; 2]>) -> [u128; 2] {
     if roll > 0 {
         if let Some(turn) = board.do_roll(roll) {
-            *steps += 1;
-            if *steps % 100_000_000 == 0 {
-                println!("{}", steps);
-            }
-
             return match turn {
-                0 => [0, BELL[roll as usize - 3]],
-                1 => [BELL[roll as usize - 3], 0],
+                0 => [0, 1],
+                1 => [1, 0],
                 _ => unreachable!(),
             };
         }
     }
 
-    let rolls = [
-        sim_board(board.clone(), 3, steps),
-        sim_board(board.clone(), 4, steps),
-        sim_board(board.clone(), 5, steps),
-        sim_board(board.clone(), 6, steps),
-        sim_board(board.clone(), 7, steps),
-        sim_board(board.clone(), 8, steps),
-        sim_board(board.clone(), 9, steps),
-    ];
+    if let Some(state) = lookup.get(&board.key()) {
+        return state.clone();
+    }
 
-    rolls
+    let mut scores = Vec::new();
+    scores.push(sim_board(board.clone(), 3, lookup));
+    scores.push(sim_board(board.clone(), 9, lookup));
+
+    for _ in 0..3 {
+        scores.push(sim_board(board.clone(), 4, lookup));
+        scores.push(sim_board(board.clone(), 8, lookup));
+    }
+
+    for _ in 0..6 {
+        scores.push(sim_board(board.clone(), 5, lookup));
+        scores.push(sim_board(board.clone(), 7, lookup));
+    }
+
+    for _ in 0..7 {
+        scores.push(sim_board(board.clone(), 6, lookup));
+    }
+
+    let score = scores
         .iter()
         .enumerate()
-        .fold([0, 0], |acc, (i, e)| [acc[0] + e[0], acc[1] + e[1]])
+        .fold([0, 0], |acc, (i, e)| [acc[0] + e[0], acc[1] + e[1]]);
+
+    lookup.insert(board.key(), score);
+
+    score
 }
 
 #[derive(Clone)]
@@ -117,10 +129,7 @@ impl Board {
     }
 
     fn do_roll(&mut self, roll: u16) -> Option<usize> {
-        self.rolls += 3;
-
         let status = self.move_player(self.turn, roll);
-
         self.turn = (self.turn + 1) % 2;
         if status {
             Some(self.turn as usize)
@@ -137,5 +146,15 @@ impl Board {
         p.1 += self.board[p.0 as usize - 1] as u16;
 
         p.1 >= self.end_score
+    }
+
+    fn key(&self) -> [u16; 5] {
+        [
+            self.turn as u16,
+            self.players[0].0,
+            self.players[1].0,
+            self.players[0].1,
+            self.players[1].1,
+        ]
     }
 }
