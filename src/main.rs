@@ -103,7 +103,7 @@ struct TestData {
 impl TestData {
     pub fn new(input: Vec<String>, answer: (usize, usize)) -> Self {
         Self {
-            input: input,
+            input,
             answer_p1: answer.0,
             answer_p2: answer.1,
         }

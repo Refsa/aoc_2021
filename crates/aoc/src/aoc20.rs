@@ -1,5 +1,4 @@
 use std::u8;
-
 use crate::runner::Runner;
 
 #[derive(Default)]
@@ -106,7 +105,7 @@ impl Image {
         self.data.iter().flatten().map(|&e| e as usize).sum()
     }
 
-    fn border(&mut self, border: Index) {
+    fn _border(&mut self, border: Index) {
         let new_w = border.0;
         let new_h = border.1;
         let move_x = self.width / 2 - new_w / 2;
