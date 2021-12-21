@@ -106,6 +106,22 @@ impl Image {
         self.data.iter().flatten().map(|&e| e as usize).sum()
     }
 
+    fn border(&mut self, border: Index) {
+        let new_w = border.0;
+        let new_h = border.1;
+        let move_x = self.width / 2 - new_w / 2;
+        let move_y = self.height / 2 - new_h / 2;
+
+        for x in 0..new_w {
+            for y in 0..new_h {
+                if x != 0 && y != 0 && x != new_w - 1 && y != new_h - 1 {
+                    continue;
+                }
+                self.data[move_y + y][move_x + x] = 1;
+            }
+        }
+    }
+
     fn grow(&mut self, by: Index) {
         let new_w = by.0 + self.width;
         let new_h = by.1 + self.height;

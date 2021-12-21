@@ -103,17 +103,17 @@ impl Runner for AOC19 {
         let mapped = map_scanners(&self.scanners[4], &scanners[2]);
         let found = mapped.into_iter().find(|(_k, v)| v.len() >= 12);
         if let Some(found) = found {
-            println!("flip 2: {:?}", found.0);
-
-            let flip_idx = found.1[0].flip;
-            flips.insert(2, flip_idx);
-            
             let offset = offsets[&4];
             offsets.insert(2, offset);
 
+            println!("flip 2: {:?}", found.0 + offset);
+
+            let flip_idx = found.1[0].flip;
+            flips.insert(2, flip_idx);
+
             for p in scanners[2].beacons.iter_mut() {
                 p.flip_self(flip_idx);
-                p.flip_self(flips[&4]);
+                // p.flip_self(flips[&4]);
                 p.add_self(offset + found.0);
             }
         }
