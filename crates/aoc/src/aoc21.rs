@@ -34,7 +34,7 @@ impl Runner for AOC21 {
 }
 
 const _BELL: [u128; 7] = [1, 3, 6, 7, 6, 3, 1];
-type LookupKey = [u16; 4];
+type LookupKey = [u16; 2];
 
 fn sim_board(
     mut board: QuantumBoard,
@@ -112,9 +112,10 @@ impl QuantumBoard {
     fn key(&self) -> LookupKey {
         [
             self.turn as u16,
-            self.players[0].0 * 10 + self.players[1].0,
-            self.players[0].1,
-            self.players[1].1,
+            self.players[0].1 * 10 * 21 * 10
+                + self.players[0].0 * 21 * 10
+                + self.players[1].1 * 10
+                + self.players[1].0,
         ]
     }
 }
